@@ -1,0 +1,14 @@
+# Build-Ausgaben
+bin/
+obj/
+
+# Ergebnis der Einzeldatei-Publikation
+dist/
+
+# lokale Laufzeitdaten der Portierung (alte Ablage neben der EXE)
+TC.TV_Workdir/
+S.TV_Workdir/
+
+# IDE
+.vs/
+*.user

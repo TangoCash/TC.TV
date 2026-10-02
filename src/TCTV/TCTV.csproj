@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Aufwärtskompatibilität: läuft auch mit neueren Desktop-Runtimes (.NET 9, 10, …),
+         wenn auf dem Rechner keine 8.x vorhanden ist. Ohne diese Angabe bricht der Start
+         mit "You must install .NET Desktop Runtime 8.0" ab. Vorhandene 8.x wird weiter
+         bevorzugt, damit die getestete Laufzeit zum Einsatz kommt. -->
+    <RollForward>Major</RollForward>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>TCTV</RootNamespace>
+    <AssemblyName>TC.TV</AssemblyName>
+    <!-- Original-Icon des AutoIt-Programms (aus den eingebetteten Ressourcen). -->
+    <ApplicationIcon>Assets\sTV.ico</ApplicationIcon>
+    <Version>1.0</Version>
+    <Product>TC.TV</Product>
+    <Company>TC.TV</Company>
+    <AssemblyTitle>TC.TV</AssemblyTitle>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Implizite WinForms-/Drawing-Usings entfernen; sie kollidieren mit den WPF-Typen. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <!-- Das WindowsDesktop-SDK fügt System.IO nicht implizit hinzu. -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <!--
+    Eine Einzeldatei-EXE genügt: die runtimeconfig.json wird mit eingebettet und der
+    Host wertet das darin stehende "rollForward" aus dem Bundle aus. Nachgemessen mit
+    COREHOST_TRACE=1 gegen eine Umgebung mit ausschliesslich .NET 10:
+      'Roll forward' enabled with version_compatibility_range [major]
+      framework:'Microsoft.WindowsDesktop.App', lowest requested version='8.0.0',
+        found version='10.0.8'
+    Die App startet dort also ohne .NET 8. Wer gar kein .NET installieren will, nimmt
+    das Profil Standalone-* (SelfContained=true, ca. 72 MB).
+  -->
+
+</Project>

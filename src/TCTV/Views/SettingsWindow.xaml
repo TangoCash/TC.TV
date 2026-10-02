@@ -1,0 +1,144 @@
+<Window x:Class="TCTV.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TC.TV"
+        Width="540"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource Brush.Window}"
+        FontFamily="Segoe UI"
+        TextOptions.TextFormattingMode="Ideal"
+        UseLayoutRounding="True">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Kopf -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2,0,0,14">
+            <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource Brush.Accent}">
+                <TextBlock Text="&#xE713;" FontFamily="{StaticResource Font.Icons}" FontSize="16"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource Brush.AccentText}" />
+            </Border>
+            <TextBlock Text="TC.TV" Style="{StaticResource H1}" Margin="10,0,0,0" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="620">
+            <StackPanel x:Name="ContentPanel">
+
+                <!-- ===================== Allgemeine Einstellungen ===================== -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock x:Name="HeaderGeneral" Style="{StaticResource SectionHeader}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name="LabelLanguage" TextWrapping="Wrap" Grid.Row="0" Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center" />
+                            <ComboBox x:Name="LanguageCombo" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource ModernCombo}">
+                                <ComboBoxItem Content="Deutsch" />
+                                <ComboBoxItem Content="English" />
+                            </ComboBox>
+
+                            <TextBlock x:Name="LabelTheme" TextWrapping="Wrap" Grid.Row="1" Grid.Column="0" Text="Theme" Margin="0,0,10,0" VerticalAlignment="Center" />
+                            <ComboBox x:Name="ThemeCombo" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource ModernCombo}">
+                                <ComboBoxItem Content="Dark orange (Standard)" />
+                                <ComboBoxItem Content="Dark grün" />
+                                <ComboBoxItem Content="Hell" />
+                                <ComboBoxItem Content="TC.TV Overlay (dunkel, transparent)" />
+                            </ComboBox>
+
+                            <TextBlock x:Name="LabelVlcPath" TextWrapping="Wrap" Grid.Row="2" Grid.Column="0" Text="VLC Player" Margin="0,0,10,0" VerticalAlignment="Center" />
+                            <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="VlcPathBox" Grid.Column="0" Style="{StaticResource InputBox}" />
+                                <Button x:Name="BrowseVlcButton" Grid.Column="1" Content="&#xE8E5;"
+                                        Style="{StaticResource IconButton}" Margin="6,0,0,0"
+                                        Click="OnBrowseVlc" VerticalAlignment="Stretch" />
+                            </Grid>
+
+                            <TextBlock x:Name="LabelFadeDelay" TextWrapping="Wrap" Grid.Row="3" Grid.Column="0" Margin="0,0,10,8" VerticalAlignment="Center" />
+                            <TextBox x:Name="FadeDelayBox" Grid.Row="3" Grid.Column="1" Width="90"
+                                     HorizontalAlignment="Left" Margin="0,0,0,8" Style="{StaticResource InputBox}" />
+
+                            <CheckBox x:Name="FadeAutoRefreshBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="FirstScreenBox" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="LeftEdgeBox" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="RecursiveBox" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="TransponderBox" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="FullscreenStreamsBox" Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,2" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ======================== VLC Einstellungen ========================= -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock x:Name="HeaderVlc" Style="{StaticResource SectionHeader}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <CheckBox x:Name="VideoOnTopBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="Vordergrund" Margin="0,2,0,6" />
+                            <CheckBox x:Name="NotificationBox" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Content="Hinweis" Margin="0,2,0,6" />
+                            <CheckBox x:Name="FixedSizeBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Fenstergröße fest" Margin="0,2,0,6" />
+                            <CheckBox x:Name="MinimizedBox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Minimiert" Margin="0,2,0,6" />
+                            <CheckBox x:Name="TitleShowBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Content="Videotitelentfernung" Margin="0,2,0,6" />
+                            <CheckBox x:Name="MinimalViewBox" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Content="Minimalansicht" Margin="0,2,0,6" />
+                            <CheckBox x:Name="DeinterlaceBox" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Content="Deinterlace" Margin="0,2,0,6" />
+                            <CheckBox x:Name="LegacyVlcBox" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Content="086i (ältere VLC-Versionen)" Margin="0,2,0,6" />
+                            <CheckBox x:Name="KeepVlcBox" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" Content="VLC erhalten beim Zap" Margin="0,2,0,6" />
+                            <CheckBox x:Name="CloseVlcBox" Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,2" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+            <Button x:Name="SaveButton" Style="{StaticResource PrimaryButton}" Width="120" Margin="0,0,8,0" Click="OnSave" />
+            <Button x:Name="CancelButton" Width="120" Click="OnCancel" />
+        </StackPanel>
+    </Grid>
+</Window>

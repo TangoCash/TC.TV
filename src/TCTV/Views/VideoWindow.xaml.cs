@@ -49,9 +49,10 @@ public sealed class VideoEntry
 }
 
 /// <summary>
-/// Video-Browser: listet Aufnahmen und Videos der Box über die /control/-API
-/// (/control/getdir, /control/getmovies, /control/file?action=list) und spielt sie
-/// per HTTP vom Dateiserver der Box ab - kein FTP mehr.
+/// Video-Browser: listet Aufnahmen und Videos der Box und spielt sie per HTTP vom
+/// Dateiserver der Box ab (kein FTP). Je nach Profil über die alte API
+/// (/control/getdir, /control/getmovies, /control/file) oder die neue
+/// (/api/v1/storage/files, /api/v1/storage/file).
 /// </summary>
 public partial class VideoWindow : Window
 {
@@ -235,7 +236,7 @@ public partial class VideoWindow : Window
     }
 
     /// <summary>Spielt eine Aufnahme per HTTP vom Dateiserver der Box ab.</summary>
-    private void PlayEntry(VideoEntry entry)
+    private async void PlayEntry(VideoEntry entry)
     {
         if (!_session.IsVlcAvailable)
         {
@@ -243,7 +244,9 @@ public partial class VideoWindow : Window
             return;
         }
 
-        string url = _session.Client.BuildHttpFileUrl(entry.FullPath);
+        // Die neue API (/api/v1/storage/file) verlangt einen kurzlebigen Medien-Token
+        // in der Adresse; die alte API liefert die Datei direkt.
+        string url = await _session.Client.GetFileUrlAsync(entry.FullPath, _cts.Token);
         string arguments = _session.VlcOptions.BuildOptionString(includeOneInstance: false) + " --one-instance " + url;
         VlcLauncher.Play(_session.VlcPath, arguments);
     }

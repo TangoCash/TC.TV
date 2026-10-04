@@ -52,7 +52,11 @@ $files | ForEach-Object { Write-Output ("  {0,-24} {1,12:N0} Bytes" -f $_.Name, 
 
 $expected = @('TC.TV.exe')
 $missing  = $expected | Where-Object { -not (Test-Path (Join-Path $dist $_)) }
-$extra    = $files | Where-Object { $_.Name -notin $expected }
+
+# Ein danebenliegendes .7z (gepackte Weitergabe der EXE) ist kein Fehler und
+# wird als Beiwerk genannt, nicht als ueberzaehlig.
+$packed = $files | Where-Object { $_.Name -like 'TC.TV.exe.*' -and $_.Name -notin $expected }
+$extra  = $files | Where-Object { $_.Name -notin $expected -and $_.Name -notin ($packed | ForEach-Object { $_.Name }) }
 
 if ($missing -or $extra) {
     Write-Warning ("Unerwarteter Inhalt: fehlend=[{0}] ueberzaehlig=[{1}]" -f ($missing -join ','), (($extra | ForEach-Object { $_.Name }) -join ','))
@@ -63,5 +67,9 @@ if ($missing -or $extra) {
     } else {
         Write-Output "OK: genau eine Datei (runtimeconfig.json ist eingebettet)."
         Write-Output "Voraussetzung auf dem Zielrechner: .NET-Desktop-Runtime ($Architecture) 8.0 ODER neuer (9/10/...)."
+    }
+
+    if ($packed) {
+        Write-Output ("Beiwerk (nicht vom Skript erzeugt): " + (($packed | ForEach-Object { $_.Name }) -join ', '))
     }
 }

@@ -54,8 +54,8 @@ powershell -File tools/publish-singlefile.ps1 -Variant Standalone -Architecture 
 
 | Variante | Ergebnis | Größe | Voraussetzung auf dem Zielrechner |
 |---|---|---|---|
-| **SingleFile** (Standard) | `dist\TC.TV.exe` | 911.953 B (x64) / 883.285 B (x86) | .NET-Desktop-Runtime (WPF) **8.0 oder neuer** |
-| **Standalone** | `dist\standalone\TC.TV.exe` | 71,9 MB (x64) / 66,4 MB (x86) | **kein .NET** |
+| **SingleFile** (Standard) | `dist\TC.TV.exe` | 971.857 B (x64) / 943.697 B (x86) | .NET-Desktop-Runtime (WPF) **8.0 oder neuer** |
+| **Standalone** | `dist\standalone\TC.TV.exe` bzw. `dist\standalone\x86\` | 72,0 MB (x64) / 66,4 MB (x86) | **kein .NET** |
 
 **Es entsteht jeweils genau eine Datei – keine `runtimeconfig.json` daneben.**
 
@@ -74,7 +74,7 @@ powershell -File tools/publish-singlefile.ps1 -Variant Standalone -Architecture 
   → die App startet dort und meldet im Selbsttest `Laufzeit: .NET 10.0.8`.
 * Die Standalone-Variante braucht gar keine Laufzeit: in einem leeren Ordner mit
   `DOTNET_ROOT` auf einen leeren Pfad und `DOTNET_MULTILEVEL_LOOKUP=0` gestartet
-  läuft sie (74/74 Prüfungen OK, `Laufzeit: .NET 8.0.27` aus der EXE).
+  läuft sie (133/133 Prüfungen OK, `Laufzeit: .NET 8.0.27` aus der EXE).
   Der erste Start entpackt sich kurz nach `%TEMP%\.net` (Single-File-Standard).
 
 
@@ -119,7 +119,7 @@ Zum Testen muss im Profil (`Box100.conf3`) die **IP der Box** gesetzt werden
 | `src/TCTV/TCTV.csproj` | WPF-Projekt, `net8.0-windows`, Ergebnis `TC.TV.exe` |
 | `src/TCTV/Assets/sTV.ico` | Original-Icon (aus den eingebetteten Ressourcen) als EXE-Icon |
 | `src/TCTV/Generated/` | **erzeugt** aus dem Original-AutoIt-Skript (siehe unten) – im Projekt enthalten |
-| `src/TCTV/Core/` | Konfiguration, Client, VLC, Themes, Localization, Modelle |
+| `src/TCTV/Core/` | Konfiguration, Box-Schnittstellen (alt/neu), VLC, Themes, Localization, Modelle |
 | `src/TCTV/Styles/Controls.xaml` | Style-System (Buttons, Eingaben, Listen, Karten, ScrollBar) |
 | `src/TCTV/Views/` | Haupt-, Einstellungs-, Profil-, Video- und Eingabefenster |
 | `src/TCTV/Properties/PublishProfiles/` | `SingleFile-*` (eine Datei, `rollForward: Major`) und `Standalone-*` (self-contained) |
@@ -175,17 +175,50 @@ powershell -File tools/extract.ps1 `
   **Dark orange** mit den Farben von neutrino-images.de; „1“ = dunkler, fast
   transparenter Rahmen (`0x252525`, WinSetTrans 50).
 
-**Recording-Service-Client** (`RecordingServiceClient`)
-* `/control/info`, `/control/getmode`, `/control/gettime?rawtime`,
+**Box-Schnittstelle** (`BoxApiClient`, `LegacyControlApi`, `NeutrinoV1Api`,
+`RecordingServiceClient`)
+
+Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
+
+* **Alte API `/control/`** (Standard) – `LegacyControlApi`, genau die Endpunkte des
+  Originalprogramms: `/control/info`, `/control/getmode`, `/control/gettime?rawtime`,
   `/control/standby`, `/control/zapto`, `/control/getbouquets`,
   `/control/getbouquet?…&epg=true&format=xml`, `/control/getdir`,
   `/control/getmovies`, `/control/file?action=list`, `/control/timer`
   (`?format=xml`, `?format=id`, `?action=new`), `/control/currenttpchannels`,
-  `/control/build_live_url`.
-* HTTP-Basisauthentifikation über `NetworkCredential` (`Web-Authentifikation`).
-* XML-Parsing von `<channel>`/`<firstEPG>`/`<secondEPG>`, `<dirs>`, `<movies>`,
-  `<filelist>` und der Timer-Liste – die Datei-Endpunkte liefern **absolute
-  Pfade** der Box (`dir`/`path`/`fullname`), die direkt weiterverwendet werden.
+  `/control/build_live_url`. Basisauthentifikation über `NetworkCredential`
+  (`Web-Authentifikation`); XML-Parsing von
+  `<channel>`/`<firstEPG>`/`<secondEPG>`, `<dirs>`, `<movies>`, `<filelist>` und
+  der Timer-Liste. Die Datei-Endpunkte liefern **absolute Pfade** der Box
+  (`dir`/`path`/`fullname`), die direkt weiterverwendet werden.
+* **Neue API `/api/v1/`** – `NeutrinoV1Api`, die REST-Schnittstelle des
+  NI-Images (<https://github.com/neutrino-images/ni-neutrino>, `src/httpd/ep/*`).
+  Gegen JSON, mit den Eigenheiten dieser Schnittstelle:
+  * **Anmeldung**: sie kennt keine Basisauthentifikation. Lesen darf jeder im
+    eigenen Netz (`lan_read`), alles andere braucht eine Sitzung
+    (`POST /api/v1/login` mit `user`/`password`; die Antwort liefert `csrf`,
+    `csrf_header` und `expires_in`). Das Programm meldet sich selbst an, merkt
+    sich den zweiten Token und schickt ihn als `X-CSRF-Token` mit – ohne ihn
+    werden POST/PUT/PATCH/DELETE mit `403` abgelehnt.
+  * **Endpunkte**: `/api/v1/system/info`, `/api/v1/system/standby`,
+    `/api/v1/channels` (geblättert über `next_cursor`, `bouquet=<nr>`),
+    `/api/v1/channels/current`, `/api/v1/bouquets`,
+    `/api/v1/epg/grid?bouquet=&from=&to=`, `/api/v1/timers` (GET/POST),
+    `/api/v1/recordings`, `/api/v1/settings/recording`,
+    `/api/v1/storage/files?path=`, `/api/v1/storage/file?path=&token=`,
+    `/api/v1/token/media`, `/api/v1/zap`, `/api/v1/stream/{id}`.
+  * **Umsetzung der Unterschiede** zur alten API: Senderliste und EPG kommen aus
+    zwei Aufrufen (die Sendungen des Bouquets werden über `epg/grid` geholt und
+    auf die Sender verteilt – erste = laufende bzw. nächste, zweite = folgende);
+    Timer werden in **Unix-Sekunden** angelegt (`kind`); eine Box im Standby wird
+    per `wake` geweckt; die Sender des laufenden Transponders werden aus
+    Satellitenposition/Transponderschlüssel/Transportstrom der Senderliste
+    berechnet (die neue API kennt kein `currenttpchannels`); Dateien gehen über
+    `/api/v1/storage/file` und werden mit einem kurzlebigen Medien-Token aus
+    `POST /api/v1/token/media` in der Adresse abgespielt; als Live-Adresse dient
+    `http://<host>:<StreamingPort>/id=<id>` (von `/api/v1/stream/{id}` geliefert,
+    mit Rückfall auf den Streaming-Port des Profils). **ReciProxy** gibt es im
+    neuen Image nicht mehr und entfällt dort.
 
 **GUI (WPF)**
 * `MainWindow`: Einblendfenster am rechten/linken Rand, Topmost, ohne Taskleiste,
@@ -194,8 +227,26 @@ powershell -File tools/extract.ps1 `
   Info1/Info2, Beschreibung, Folgesendung); Werkzeugleiste
   (Stream, Stop, Video, EPG aktualisieren, Timer, Einstellungen, Profile,
   Vollbild-Hotkey, Beenden).
+* **Kopfzeile nennt das Profil**: unter dem Titel steht die Statusmeldung mit dem
+  Namen des aktiven Profils, z. B. „Verbunden! · Box100“ bzw.
+  „Keine Verbindung zur Box · Box100“ – so ist auf einen Blick klar, mit welcher
+  Box man verbunden ist (`MainWindow.SetStatus` + `StatusLine`). Der Statuspunkt
+  hängt mit der Maus an einem Tooltip, der Profil, Adresse und Schnittstelle
+  nennt (z. B. „Profil: Box100 / Box: 192.168.178.222:80 / API: Alte API
+  (/control/)“). Das Original schrieb dort nur „Verbunden!“/„Nicht verbunden!“
+  ($ei[100]/$ei[99], S.TV.au3 Z. 3670/3678).
 * **Fade-in/Fade-out** per Mausposition an der Bildschirmkante, konfigurierbare
   Verzögerung (`fade-in-Verzögerung in Millisekunden`), Pinnen per Tray-Klick.
+* **EPG-Auto-Aktualisierung** (`Optionen\fade-in-Auto-Aktualisierung`): ist sie
+  gesetzt, holt TC.TV beim **Einblenden** des Fensters EPG und Sender des
+  aktuellen Bouquets neu von der Box – man muss also nicht „EPG aktualisieren“
+  drücken. Im Original geschah das bei jedem Ein- und Ausblenden
+  (`_1ak`/`_1al` → `_1ag`); hier ist es **gebremst**: nachgeladen wird höchstens
+  alle 60 Sekunden (`MainWindow.AutoRefreshInterval`), damit hektisches
+  Mausschwenken am Rand die Box nicht mit Anfragen überschüttet. Das Fenster
+  springt dabei nicht um: es bleibt beim gewählten Bouquet und beim markierten
+  Sender. Der Tooltip der Option stammt aus Sprachzeile 51 („EPG wird direkt
+  nach Einblendung des Fensters aktualisiert.“).
 * **Tray-Icon** aus der Original-`sTV.ico` mit Menü.
 * Hotkeys wie im Original: `f` = Fenster verbreitern (680 px), `s` = VLC-Stop,
   `Esc` = ausblenden.
@@ -211,11 +262,15 @@ powershell -File tools/extract.ps1 `
 * Pfaderkennung: INI → `VLCPortable\VLCPortable.exe` → `Program Files`
   → `Program Files (x86)` → Registry `HKLM\Software\VideoLAN\VLC` (32/64-bit).
 * Live-Stream: `<host>:<StreamingPort>/id=<channelId>` bzw. `/ReciProxy`
-  (mit `build_live_url` und `ReciProxy\Startverzögerung` × 1000 ms).
+  (mit `build_live_url` und `ReciProxy\Startverzögerung` × 1000 ms). Bei der
+  neuen API wird die Adresse von `/api/v1/stream/{id}` übernommen; ReciProxy gibt
+  es dort nicht.
 * **Aufnahme-/Video-Wiedergabe per HTTP** (kein FTP):
   `--one-instance http://<host>:<WebserverPort>/<absoluter Pfad>`
   (Leerzeichen → `%20`). Der Pfad stammt aus `/control/getdir`,
-  `/control/getmovies` bzw. `/control/file?action=list`.
+  `/control/getmovies` bzw. `/control/file?action=list` – bei der neuen API aus
+  `/api/v1/storage/files`, abgespielt über `/api/v1/storage/file` mit
+  Medien-Token.
 * Stoppen beim Zap: Taste `s` an das VLC-Fenster bzw. Prozess beenden
   (`VLC erhalten beim Zap`, `086i`, `Beenden`).
 
@@ -240,11 +295,42 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
 * VLC-Erkennung über `Program Files (x86)`.
 * `--selftest`: alle fünf Fenster (Main, Settings, Profiles, Video, Prompt)
   werden fehlerfrei aufgebaut (Exit-Code 0).
-* `--selftest`: **74 Prüfungen** mit synthetischen Original-Antworten
+* `--selftest`: **133 Prüfungen** mit synthetischen Original-Antworten
   (Timer-XML ohne/mit Eintrag, `format=id`, ID-Vergleich, Transponder,
   `getdir`/`getmovies`/`file`-Listen, HTTP-Wiedergabe-URL, UTF-8-Umlaute,
   Latin-1-Rückfall, INI-Rundlauf, Fortschrittsberechnung, Themenauswahl,
   Datenpfade, Profilfenster) – alle OK, Exit-Code 0.
+* `--selftest` prüft die **neue API** mit 43 weiteren Fällen: Auswahl im Profil
+  (`API-Version` alt/neu inkl. Rundlauf durch die `.conf3` und der Auswahl im
+  Profilfenster), Senderliste
+  (`/channels` mit `next_cursor`, Sendernummern, Logo-Kurz-ID, Transponder je
+  Sender), Bouquets, EPG-Raster (`epg/grid` → erste/zweite Sendung, Startzeit,
+  Fortschritt und gelaufene Minuten), Timer (`kind`, Unix-Sekunden, Laufzeit),
+  laufende Aufnahmen, Dateilisten, Aufnahmeverzeichnis aus `/settings`,
+  Zeitumrechnung sowie leere/defekte Antworten.
+* **EPG-Auto-Aktualisierung live geprüft** (echtes Fenster, simulierte Box,
+  Maus per `Cursor.Position` an den Bildschirmrand): mit gesetzter Option stiegen
+  die Anfragen an die Box nach dem Aus-/Einblenden mit frischen Daten **nicht**
+  (2 → 2, gebremst), nach über 60 Sekunden wurden sie **nachgeladen** (2 → 3),
+  und unmittelbar danach wieder nicht (3 → 3); mit abgeschalteter Option blieb es
+  durchgehend bei 2. Das Protokoll der Box belegt zudem, dass beim Nachladen nur
+  das **aktuelle** Bouquet geholt wird (`/control/getbouquet`, nicht die
+  Bouquetliste) – die Auswahl des Benutzers bleibt also stehen.
+  Dazu 11 Selbsttest-Prüfungen (Standard aus, Grenze bei genau 60 s, noch nie
+  geladen, Beschriftung + Tooltip aus den Sprachzeilen 50/51 im Einstellungsfenster).
+* **Kopfzeile geprüft**: die Statuszeile trägt den Profilnamen
+  (`StatusLine("Verbunden!", "Box100")` → „Verbunden! · Box100“, leerer
+  Profilname lässt die Meldung unverändert), das aufgebaute Hauptfenster zeigt
+  „Verbunden! · Box100“ aus seiner Beispielansicht, und der Tooltip nennt
+  Adresse und Schnittstelle (`:80`, „Alte API (/control/)“) – 5 Prüfungen.
+  Zusätzlich als PNG in allen vier Themes gesichtet.
+* **Live gegen eine simulierte Box geprüft** (`HttpListener` mit den Routen der
+  neuen API und einem Protokoll aller Anfragen): Anmeldung (`POST /api/v1/login`),
+  Sitzungs-Cookie, zweiter Token als `X-CSRF-Token` bei allen ändernden Aufrufen,
+  Senderliste in zwei Seiten, EPG-Zuordnung, Medien-Token in der Datei-Adresse,
+  Zap (`{"channel_id":…,"wake":true}`), Timer als Unix-Sekunden – alles aus dem
+  echten Client (`RecordingServiceClient`) heraus, inklusive Berechnung der
+  aktuellen Transpondersender.
 * Profilfenster **live** geprüft (UI-Automation mit echtem Mausklick auf
   „Profile“ → „Speichern“): der Klick kommt an, die `.conf3` wird neu
   geschrieben, `Benutzerdaten\Profil` gesetzt, `ShowDialog()` liefert `true`
@@ -253,6 +339,9 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
   (Dark orange = Standard, Dark grün, Hell, TC.TV Overlay). Für alle vier
   Themes auf einmal: `powershell -File tools\render-themes.ps1`
   (schreibt je Theme einen Ordner und setzt vorher `Theme=` in der INI).
+  Die Beispieldaten des Hauptfensters bleiben dabei stehen: ohne das
+  überschrieb der erste Netzabruf sie wieder mit „Keine Verbindung zur Box“
+  (`MainWindow.SkipInitialLoad`).
 * `--selftest`: 12 Design-Prüfungen (Dark orange als Standard inkl. der exakten
   NI-Farbwerte `#212121`/`#424242`/`#616161`/`#E0E0E0`/`#9E9E9E`/`#FD6D13`,
   sowie die übrigen Themes) – alle OK.
@@ -260,8 +349,8 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
 ### Einzeldatei-EXE und Datenablage – geprüft
 
 * `tools/publish-singlefile.ps1` liefert **genau eine Datei** `dist\TC.TV.exe`
-  (911.953 Bytes) – die `runtimeconfig.json` ist mit eingebettet.
-* Lauffähig geprüft: `TC.TV.exe --selftest` **aus dem Publish-Ordner** → 74/74 OK,
+  (971.857 Bytes) – die `runtimeconfig.json` ist mit eingebettet.
+* Lauffähig geprüft: `TC.TV.exe --selftest` **aus dem Publish-Ordner** → 133/133 OK,
   Exit-Code 0.
 * **Aufwärtskompatibilität nachgemessen** (Umgebung mit *nur* .NET 10: eigene
   `DOTNET_ROOT`-Wurzel mit `host`- und `shared`-Junctions auf echte 10.0.8-Frameworks):
@@ -269,7 +358,7 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
   | Auslieferung | nur .NET 10 vorhanden | kein .NET auffindbar |
   |---|---|---|
   | `TC.TV.exe` (SingleFile, 1 Datei) | **OK – `Laufzeit: .NET 10.0.8`** | – |
-  | `TC.TV.exe` (Standalone, 1 Datei) | OK – `Laufzeit: .NET 8.0.27` | **OK – 74/74 in 2 s** |
+  | `TC.TV.exe` (Standalone, 1 Datei) | OK – `Laufzeit: .NET 8.0.27` | **OK – 133/133 in 2 s** |
 
 * `COREHOST_TRACE=1` belegt, dass der Host `rollForward` **aus dem Bundle** anwendet:
   `'Roll forward' enabled with version_compatibility_range [major]` und
@@ -280,10 +369,10 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
 * Kontrolle mit `DOTNET_ROLL_FORWARD=Disable`: Start schlägt fehl → die Umgebung
   hat wirklich kein 8.x, der Erfolg oben kommt also vom RollForward.
 * Mit vorhandenem 8.x läuft die App wie bisher auf **.NET 8.0.31** (8.x wird bevorzugt).
-* Standalone-Variante: `dist\standalone\TC.TV.exe` (71,9 MB) in einen leeren Ordner
+* Standalone-Variante: `dist\standalone\TC.TV.exe` (72,0 MB) in einen leeren Ordner
   kopiert und mit `DOTNET_ROOT` auf einen **leeren** Ordner plus
   `DOTNET_MULTILEVEL_LOOKUP=0` gestartet – also ohne irgendeine auffindbare
-  .NET-Laufzeit: **ExitCode 0, 74/74 OK in 2 s**. x86: 66,4 MB, ebenfalls eine Datei.
+  .NET-Laufzeit: **ExitCode 0, 133/133 OK in 2 s**. x86: 66,4 MB, ebenfalls eine Datei.
 * EXE-Icon geprüft: `ExtractAssociatedIcon` liefert das Originalsymbol
   (TV mit Antenne), Icon-Größen 16–256 px.
 * Datenablage geprüft:
@@ -296,9 +385,10 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
     unverändert (die EXE schreibt dort nicht mehr hinein).
 
 **Nicht** getestet werden konnte die Kommunikation mit einer echten
-DVBViewer-Recording-Service-Box (keine im Testsystem vorhanden). Die
-Endpunkte, XML-/JSON-Strukturen und Kommandozeilen wurden aus dem Originalcode
-abgeleitet.
+DVBViewer-Recording-Service-Box oder einer echten Box mit NI-Image (keine im
+Testsystem vorhanden). Die Endpunkte, XML-/JSON-Strukturen und Kommandozeilen
+wurden aus dem Originalcode bzw. den NI-Firmware-Quellen abgeleitet; für die
+neue API zusätzlich gegen eine simulierte Box durchgespielt (siehe oben).
 
 ---
 
@@ -354,6 +444,58 @@ Die Live-Wiedergabe bleibt unverändert bei `streamts`
 er **nicht** streamen, deshalb der getrennte Weg über den Webserver.
 
 
+### Neue API `/api/v1/` – Abgleich mit dem NI-Image
+
+Die neue Schnittstelle wurde gegen die Quellen des Images abgeglichen:
+<https://github.com/neutrino-images/ni-neutrino> (`src/httpd/routes.cpp`,
+`src/httpd/ep/*.cpp`, `src/httpd/server.cpp`, `src/httpd/auth.cpp`,
+`src/coreapi/streaming.cpp`). Umgesetzt sind genau die Routen, die das Programm
+braucht:
+
+| Route | Antwort der Box | Umsetzung hier |
+|---|---|---|
+| `POST /api/v1/login` | `{"authenticated":true,"level":"system","user":…,"csrf":…,"csrf_header":…,"expires_in":…}` + `Set-Cookie: ni-web-session=…` | eigene Anmeldung, Cookie und `X-CSRF-Token` automatisch |
+| `GET /api/v1/system/info` | `{"box":{…},"api":{…}}` | Verbindungstest |
+| `GET /api/v1/system/standby` | `{"on":true\|false}` | Standby-Erkennung |
+| `POST /api/v1/system/standby` | `{"on":true\|false}` im Body, Systemrechte | Standby schalten (CEC kennt die neue API nicht) |
+| `GET /api/v1/channels?bouquet=&limit=&cursor=` | `{"items":[…],"next_cursor":"…"}` | blättert über `next_cursor` (Grenzen: 500/Seite) |
+| `GET /api/v1/channels/current` | `{"id":…,"name":…,"kind":"tv\|radio\|webtv\|webradio"}` | Modus-Erkennung, aktueller Sender/Transponder |
+| `GET /api/v1/bouquets` | `{"items":[{"id":…,"name":…,"hidden":…,"locked":…,"tv_count":…}]}` | Bouquet-Auswahl (Nummer = `id`) |
+| `GET /api/v1/epg/grid?bouquet=&from=&to=&cursor=` | `{"items":[{"channel_id":…,"events":[{"id","title","description","start","duration"}]}],"next_cursor":…}` | Sendungen je Sender; daraus erste (laufende bzw. nächste) und zweite |
+| `GET /api/v1/timers` | `{"items":[{"id","kind","channel_id","start","stop","title","state",…}]}` | Timerliste (Sendernamen aus der Senderliste) |
+| `POST /api/v1/timers` | `{"id":…}` (201), `kind` = `record` | Timer anlegen, Zeiten als **Unix-Sekunden** |
+| `GET /api/v1/recordings` | `{"items":[{"id","channel_id","title","start","timeshift",…}]}` | laufende Aufnahmen |
+| `GET /api/v1/settings/recording` | `{"items":[{"id":"network_nfs_recordingdir","value":…}]}` | Aufnahmeverzeichnis |
+| `GET /api/v1/storage/files?path=` | `{"items":[{"id":"Name","kind":"dir\|regular\|…","size":…}]}` | Verzeichnislisten (Systemrechte) |
+| `GET /api/v1/storage/file?path=&token=` | Bytes der Datei | Wiedergabe der Aufnahme |
+| `POST /api/v1/token/media` | `{"token":…,"scope":"media","expires_in":…}` | Medien-Token für die Adresse (nur diese Route nimmt eines an) |
+| `POST /api/v1/zap` | 202, Body `{"channel_id":…,"wake":…}` | Umschalten |
+| `GET /api/v1/stream/{id}` | `{"url":…,"name":…,"port":…}` | Live-Adresse |
+
+Eigenschaften der Schnittstelle, die den Aufbau bestimmen:
+
+* **Basic wird nur auf der alten Oberfläche akzeptiert.** `src/httpd/auth.h`
+  sagt das ausdrücklich („Basic is accepted only on the legacy surface under
+  `/control/`“), deshalb meldet sich das Programm an und benutzt Sitzung +
+  CSRF-Token.
+* **Schreiben braucht eine Sitzung**, Lesen erlaubt die Box jedem im eigenen
+  Netz (`lan_read`); `/api/v1/storage/*` und `/api/v1/token/media` verlangen
+  mehr als `read`.
+* **Rechteprüfung vor dem Body**: der Router entscheidet anhand des Pfades,
+  bevor der Body gelesen wird – ein abgelehnter Aufruf kommt sofort zurück.
+* **Der Router verwirft `?token=`**, bevor er die Parameter prüft; ein Token
+  in der Adresse ist also kein Hindernis für die Routen-Prüfung.
+* **`/api/v1/epg/grid`** ist auf 100 Zeilen je Seite begrenzt
+  (`MAX_GRID_CHANNELS`) und endet mit fehlendem `next_cursor`; `limit` der
+  Senderliste ist bei 500 gedeckelt (`kMaxPage`). Beides wird beim Blättern
+  berücksichtigt.
+* **ReciProxy** kommt im neuen Image nicht mehr vor (kein Treffer im ganzen
+  Quellbaum) – bei der neuen API entfällt der Schalter, es wird
+  `http://<host>:<StreamingPort>/id=<id>` benutzt (`addressPrefix` in
+  `src/coreapi/streaming.cpp` baut genau dieses Format, mit dem
+  `streaming_port` der Box).
+
+
 ### Behobener Fehler: dauerhafte Meldung „Aufnahme läuft!“
 
 Ursprünglich wurde für die Warnung `GetTimersAsync()` (XML) ausgewertet und nur
@@ -367,9 +509,13 @@ Korrekt umgesetzt ist jetzt die Original-Logik aus `_1aq`:
 2. **Aktuell laufende Aufnahmen** bestimmen: Timer aus `/control/timer?format=id`
    gegen die Boxzeit (`/control/gettime?rawtime`) prüfen – nur Timer mit
    `Start ≤ jetzt < Ende` zählen. Geplante oder beendete Timer blockieren nicht.
+   Bei der neuen API kommen die laufenden Aufnahmen aus `/api/v1/recordings`
+   (die Box meldet sie selbst) und die Uhrzeit von der lokalen Uhr.
 3. Wird **derselbe** Sender aufgenommen (`ChannelIdsMatch`, tolerant gegenüber
    führenden Nullen) → keine Warnung.
-4. Liegt der Sender auf dem **aktuellen Transponder** (`/control/currenttpchannels`) → keine Warnung.
+4. Liegt der Sender auf dem **aktuellen Transponder** (`/control/currenttpchannels`;
+   bei der neuen API aus Satellitenposition/Transponderschlüssel/Transportstrom
+   der Senderliste berechnet) → keine Warnung.
 5. Nur wenn all das nicht zutrifft, erscheint die Meldung
    `$ei[75]`/`$ei[54]` („Aufnahme läuft!“ / „Aktuell Streaming nur auf gleichem Transponder möglich.“)
    und der Stream wird – wie im Original – **nicht** gestartet.
@@ -505,6 +651,9 @@ und das Hauptfenster lädt Profil und Senderliste neu
 (`ProfilesWindow.ApplyAndActivate()`, im Original der Speichern-Zweig mit
 `IniWrite($em,"Benutzerdaten","Profil",$nl)` + `_15t`/`GUIDelete`).
 „Profil wechseln“ löst denselben Ablauf aus, „Zurück“ schließt ohne zu speichern.
+Neu im Profilfenster ist die Auswahl **API** (`Profildaten\API-Version`):
+„Alte API (/control/)“ (Standard, wie das Originalprogramm) oder
+„Neue API (/api/v1/)“ für das NI-Image – siehe „Box-Schnittstelle“ oben.
 
 ### Entwickler-Werkzeuge
 
@@ -528,9 +677,10 @@ Start ist davon unberührt. `--datadir` gilt für alle genannten Werkzeuge.
 | `_1b0`…`_1b5` (Base64 + `RtlDecompressBuffer`) | `ResourceProvider` |
 | `IniRead`/`IniWrite` | `IniFile` |
 | `$em`, `$ek`, `$ej`, `$el` | `AppPaths` |
-| `$fs` (Profil-`.conf3`) | `Profile` / `ProfileStore` |
+| `$fs` (Profil-`.conf3`) | `Profile` / `ProfileStore` (inkl. `API-Version` alt/neu) |
 | `$ie[1000][23]` | `Channel` + `EpgEvent` |
-| `InetGet` auf `/control/...` | `RecordingServiceClient` |
+| `InetGet` auf `/control/...` | `LegacyControlApi` (gewählt über das Profil) |
+| `GET/POST /api/v1/...` (NI-Image) | `NeutrinoV1Api` (gewählt über das Profil) |
 | `$l0`…`$l9` + `ShellExecute($kc, …)` | `VlcOptions.BuildOptionString()` + `VlcLauncher` |
 | `ShellExecute($kc, "… ftp://user:pass@box/pfad")` | `RecordingServiceClient.BuildHttpFileUrl()` → `http://host:webport/<absoluter Pfad>` |
 | `$lf[3][11]` | `Theme` |
@@ -551,7 +701,9 @@ Start ist davon unberührt. `--datadir` gilt für alle genannten Werkzeuge.
   `extract.ps1` schreibt `S.TV` → `-ProductName` (Standard `TC.TV`), damit
   die Tabelle `LocalizationTable.cs` reproduzierbar bleibt.
 * Konfigurations- und Profildateien bleiben zum Original kompatibel
-  (gleiche Schlüssel = gleiche INI).
+  (gleiche Schlüssel = gleiche INI). Zusätzlich steht in der Profildatei
+  `Profildaten\API-Version` (`alt`/`neu`); fehlt der Schlüssel, gilt die alte
+  API – Profile aus früheren Programmversionen laufen also unverändert.
 * INI und Box-Antworten werden als **UTF-8** gelesen – die Box liefert UTF-8
   (`charset=UTF-8`, `convert_UTF8_To_UTF8_XML`). Ist der Inhalt kein gültiges
   UTF-8 (etwa eine noch von der AutoIt-Fassung in ANSI geschriebene INI), wird

@@ -105,6 +105,11 @@
                                 <CheckBox x:Name="ForceSwitchBox" Margin="0,8,0,0" />
                                 <CheckBox x:Name="FavoritesBox" Margin="0,8,0,0" />
                                 <CheckBox x:Name="MultiTunerBox" Margin="0,8,0,0" />
+
+                                <StackPanel Margin="0,16,0,0">
+                                    <TextBlock x:Name="LabelApi" Style="{StaticResource FieldLabel}" />
+                                    <ComboBox x:Name="ApiBox" Style="{StaticResource ModernCombo}" />
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
                     </StackPanel>

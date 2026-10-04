@@ -29,6 +29,17 @@ public sealed class EpgEvent
 
     public string Percentage { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Beginn als Unix-Sekunden. Nur die neue API (/api/v1/epg/grid) nennt ihn; die
+    /// alte API liefert nur Text. 0 = unbekannt.
+    /// </summary>
+    public long StartUnix { get; set; }
+
+    /// <summary>
+    /// Dauer in Sekunden (neue API; 0 = unbekannt).
+    /// </summary>
+    public long DurationSeconds { get; set; }
+
     public bool IsEmpty => string.IsNullOrEmpty(Description) && string.IsNullOrEmpty(EventId);
 
     /// <summary>Headertext wie im Original: info1 + Zeilenumbruch + info2.</summary>

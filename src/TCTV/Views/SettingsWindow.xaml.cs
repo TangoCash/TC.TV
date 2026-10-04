@@ -25,6 +25,7 @@ public partial class SettingsWindow : Window
         LabelLanguage.Text = Localization.T(120);
         LabelFadeDelay.Text = Localization.T(301);
         FadeAutoRefreshBox.Content = Localization.T(50);
+        FadeAutoRefreshBox.ToolTip = Localization.T(51);
         FirstScreenBox.Content = Localization.T(308);
         LeftEdgeBox.Content = Localization.T(316);
         RecursiveBox.Content = Localization.T(320);
@@ -120,4 +121,13 @@ public partial class SettingsWindow : Window
     }
 
     private void OnCancel(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    /// <summary>
+    /// Nur für den Selbsttest: Beschriftung und Tooltip der Option
+    /// „EPG-Auto-Aktualisierung“ sowie ihr Zustand.
+    /// </summary>
+    internal (string Label, string Tip, bool Checked) AutoRefreshInfoForSelfTest
+        => (FadeAutoRefreshBox.Content as string ?? string.Empty,
+            FadeAutoRefreshBox.ToolTip as string ?? string.Empty,
+            FadeAutoRefreshBox.IsChecked == true);
 }

@@ -36,6 +36,15 @@ public partial class ProfilesWindow : Window
         ApplyButton.Content = Localization.T(302);
         ActivateButton.Content = Localization.T(24);
         CloseButton.Content = Localization.T(20);
+
+        LabelApi.Text = "API";
+        ApiBox.ToolTip = "Alte API (/control/) = Originalprogramm; "
+            + "Neue API (/api/v1/) = REST-Schnittstelle des NI-Images (Schreiben braucht "
+            + "Benutzer/Passwort, ReciProxy entfällt).";
+        ApiBox.Items.Clear();
+        ApiBox.Items.Add(BoxApis.DisplayName(BoxApi.Legacy));
+        ApiBox.Items.Add(BoxApis.DisplayName(BoxApi.V1));
+        ApiBox.SelectedIndex = 0;
     }
 
     private void LoadProfiles()
@@ -68,6 +77,7 @@ public partial class ProfilesWindow : Window
         ForceSwitchBox.IsChecked = profile.ForceSwitch;
         FavoritesBox.IsChecked = profile.FavoritesOnly;
         MultiTunerBox.IsChecked = profile.MultiTuner;
+        ApiBox.SelectedIndex = profile.ApiVersion == BoxApi.V1 ? 1 : 0;
         _loading = false;
     }
 
@@ -173,9 +183,19 @@ public partial class ProfilesWindow : Window
         profile.ForceSwitch = ForceSwitchBox.IsChecked == true;
         profile.FavoritesOnly = FavoritesBox.IsChecked == true;
         profile.MultiTuner = MultiTunerBox.IsChecked == true;
+        profile.ApiVersion = ApiBox.SelectedIndex == 1 ? BoxApi.V1 : BoxApi.Legacy;
         _session.Profiles.Save(profile);
         return name;
     }
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>
+    /// Nur für den Selbsttest: stellt die API-Auswahl im Fenster ein (entspricht der
+    /// Auswahl mit der Maus im Kombinationsfeld).
+    /// </summary>
+    internal void SelectApiForSelfTest(BoxApi api)
+    {
+        ApiBox.SelectedIndex = api == BoxApi.V1 ? 1 : 0;
+    }
 }

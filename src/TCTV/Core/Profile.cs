@@ -40,6 +40,12 @@ public sealed class Profile
     /// <summary>ReciProxy-Startverzoegerung (ms), wie im Original mit "000" ergaenzt.</summary>
     public string ReciProxyDelay { get; set; } = "0";
 
+    /// <summary>
+    /// Angesprochene Box-Schnittstelle: "Alte API (/control/)" (Standard) oder
+    /// "Neue API (/api/v1/)". Ini-Schluessel "Profildaten\API-Version" ("alt"/"neu").
+    /// </summary>
+    public BoxApi ApiVersion { get; set; } = BoxApi.Legacy;
+
     public static Profile Load(string iniPath, string name)
     {
         IniFile ini = new(iniPath);
@@ -67,6 +73,7 @@ public sealed class Profile
         profile.WebUser = Default(ini.Read("Profildaten", "Webserver Nutzer"), "root");
         profile.WebPassword = Default(ini.Read("Profildaten", "Webserver Passwort"), "coolstream");
         profile.ReciProxyDelay = Default(ini.Read("ReciProxy", "Startverzögerung"), "0");
+        profile.ApiVersion = BoxApis.Parse(ini.Read("Profildaten", "API-Version"));
 
         return profile;
     }
@@ -108,6 +115,7 @@ public sealed class Profile
 
         ini.Write("VLC Fenster", "Multituner", MultiTuner ? "1" : "0");
         ini.Write("ReciProxy", "Startverzögerung", ReciProxyDelay);
+        ini.Write("Profildaten", "API-Version", BoxApis.ToIniValue(ApiVersion));
     }
 
     private static string FirstNonEmpty(string a, string b) => !string.IsNullOrEmpty(a) ? a : b;

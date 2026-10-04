@@ -449,6 +449,26 @@ public partial class App : Application
                     App.Session.Client.Profile.Host,
                     App.Session.Profile.Host,
                     StringComparison.OrdinalIgnoreCase));
+
+            // Die Auswahl "API" im Fenster muss in der Profildatei ankommen.
+            ProfilesWindow apiWindow = new();
+            apiWindow.SelectApiForSelfTest(BoxApi.V1);
+            bool apiApplied = apiWindow.ApplyAndActivate();
+            Profile written = App.Session.Profiles.Load(
+                App.Session.Settings.ProfileFileName[..^ProfileStore.Extension.Length]);
+            Expect("ProfilesWindow: API-Auswahl \"neue API\" wird gespeichert",
+                apiApplied && written.ApiVersion == BoxApi.V1, written.ApiVersion.ToString());
+
+            App.Session.ReloadProfile();
+            Expect("ProfilesWindow: danach spricht der Client die neue API",
+                App.Session.Client.ApiVersion == BoxApi.V1, App.Session.Client.ApiVersion.ToString());
+
+            ProfilesWindow backWindow = new();
+            backWindow.SelectApiForSelfTest(BoxApi.Legacy);
+            backWindow.ApplyAndActivate();
+            App.Session.ReloadProfile();
+            Expect("ProfilesWindow: zurueck auf die alte API",
+                App.Session.Client.ApiVersion == BoxApi.Legacy, App.Session.Client.ApiVersion.ToString());
         }
         catch (Exception ex)
         {
@@ -468,6 +488,248 @@ public partial class App : Application
             Expect("API: keine FTP-URL im Client",
                 !url.StartsWith("ftp", StringComparison.OrdinalIgnoreCase));
         }
+
+        // --- EPG-Auto-Aktualisierung beim Einblenden (Optionen\fade-in-Auto-Aktualisierung) ---
+        Expect("EPG-Auto-Aktualisierung: Standard ist aus", !App.Session.Settings.FadeInAutoRefresh);
+        Expect("EPG-Auto-Aktualisierung: Sprachzeile 51 ist der Tooltip-Text",
+            TCTV.Core.Localization.T(51).Contains("EPG"), TCTV.Core.Localization.T(51));
+        Expect("EPG-Auto-Aktualisierung: Sprachzeile 51 ist nicht die Beschriftung",
+            TCTV.Core.Localization.T(51) != TCTV.Core.Localization.T(50));
+
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        TimeSpan interval = TCTV.Views.MainWindow.AutoRefreshInterval;
+        Expect("EPG-Auto-Aktualisierung: aus => kein Nachladen",
+            !TCTV.Views.MainWindow.ShouldAutoRefresh(false, now.AddMinutes(-5), now));
+        Expect("EPG-Auto-Aktualisierung: frische Daten => kein Nachladen",
+            !TCTV.Views.MainWindow.ShouldAutoRefresh(true, now.Add(-interval + TimeSpan.FromSeconds(1)), now));
+        Expect("EPG-Auto-Aktualisierung: genau " + interval.TotalSeconds + " s => Nachladen",
+            TCTV.Views.MainWindow.ShouldAutoRefresh(true, now.Add(-interval), now));
+        Expect("EPG-Auto-Aktualisierung: aeltere Daten => Nachladen",
+            TCTV.Views.MainWindow.ShouldAutoRefresh(true, now.AddMinutes(-5), now));
+        Expect("EPG-Auto-Aktualisierung: noch nie geladen => Nachladen",
+            TCTV.Views.MainWindow.ShouldAutoRefresh(true, DateTimeOffset.MinValue, now));
+        Expect("EPG-Auto-Aktualisierung: Abstand ist 60 s",
+            interval == TimeSpan.FromSeconds(60), interval.ToString());
+
+        try
+        {
+            SettingsWindow settingsWindow = new();
+            (string label, string tip, bool check) = settingsWindow.AutoRefreshInfoForSelfTest;
+            Expect("SettingsWindow: Option ist beschriftet und hat einen Tooltip",
+                label == TCTV.Core.Localization.T(50) && tip == TCTV.Core.Localization.T(51), label + " / " + tip);
+            Expect("SettingsWindow: Option uebernimmt den Ini-Wert", check == App.Session.Settings.FadeInAutoRefresh);
+        }
+        catch (Exception ex)
+        {
+            Expect("SettingsWindow: Option lesbar (" + ex.GetType().Name + ": " + ex.Message + ")", false);
+        }
+
+        // --- Kopfzeile: Statusmeldung samt Profilname ---
+        Expect("Kopfzeile: Statuszeile nennt das Profil",
+            TCTV.Views.MainWindow.StatusLine("Verbunden!", "Box100") == "Verbunden! · Box100",
+            TCTV.Views.MainWindow.StatusLine("Verbunden!", "Box100"));
+        Expect("Kopfzeile: ohne Profilname bleibt die Meldung unveraendert",
+            TCTV.Views.MainWindow.StatusLine("Verbunden!", string.Empty) == "Verbunden!"
+            && TCTV.Views.MainWindow.StatusLine("Verbunden!", null) == "Verbunden!");
+        Expect("Kopfzeile: auch \"Nicht verbunden\" nennt das Profil",
+            TCTV.Views.MainWindow.StatusLine(TCTV.Core.Localization.T(99), "Box100")
+                == TCTV.Core.Localization.T(99) + " · Box100");
+
+        try
+        {
+            MainWindow headerWindow = new() { AllowClose = true };
+            headerWindow.LoadDemoChannels();
+            (string headerText, string headerTip) = headerWindow.StatusInfoForSelfTest;
+
+            string profileName = App.Session.Profile.Name;
+            string expectedHeader = profileName.Length > 0
+                ? TCTV.Core.Localization.T(100) + " · " + profileName
+                : TCTV.Core.Localization.T(100);
+            Expect("Kopfzeile: Fenster zeigt die Meldung mit Profilnamen",
+                headerText == expectedHeader, headerText);
+            Expect("Kopfzeile: Kurzinfo nennt Box-Adresse und Schnittstelle",
+                headerTip.Contains(App.Session.Profile.Host)
+                && headerTip.Contains(":" + App.Session.Profile.WebPort)
+                && headerTip.Contains(BoxApis.DisplayName(App.Session.Profile.ApiVersion)),
+                headerTip.Replace("\n", " | "));
+
+            headerWindow.Close();
+        }
+        catch (Exception ex)
+        {
+            Expect("Kopfzeile: Fenster lesbar (" + ex.GetType().Name + ": " + ex.Message + ")", false);
+        }
+
+        // --- Neue API (/api/v1/): Auswahl im Profil ---
+        Expect("API: ohne Angabe bleibt es bei /control/", BoxApis.Parse(string.Empty) == BoxApi.Legacy);
+        Expect("API: \"neu\" wählt /api/v1/", BoxApis.Parse("neu") == BoxApi.V1);
+        Expect("API: \"v1\" wählt /api/v1/", BoxApis.Parse("v1") == BoxApi.V1);
+        Expect("API: \"alt\" bleibt /control/", BoxApis.Parse("alt") == BoxApi.Legacy);
+
+        string apiProfilePath = Path.Combine(AppPaths.TempDir, "api-version.conf3");
+        new Profile { Name = "api-version", Host = "192.168.178.222", ApiVersion = BoxApi.V1 }.Save(apiProfilePath);
+        IniFile apiIni = new(apiProfilePath);
+        Profile apiReloaded = Profile.Load(apiProfilePath, "api-version");
+        Expect("Profil: API-Version wird als \"neu\" gespeichert",
+            apiIni.Read("Profildaten", "API-Version", string.Empty) == "neu");
+        Expect("Profil: API-Version wird als \"neu\" gelesen", apiReloaded.ApiVersion == BoxApi.V1);
+
+        new Profile { Name = "api-version", Host = "192.168.178.222", ApiVersion = BoxApi.Legacy }.Save(apiProfilePath);
+        IniFile legacyIni = new(apiProfilePath);
+        Expect("Profil: alte API wird als \"alt\" gespeichert und gelesen",
+            legacyIni.Read("Profildaten", "API-Version", string.Empty) == "alt"
+            && Profile.Load(apiProfilePath, "api-version").ApiVersion == BoxApi.Legacy);
+        File.Delete(apiProfilePath);
+
+        Profile v1Host = new() { Host = "192.168.178.222", WebPort = "80", ApiVersion = BoxApi.V1 };
+        using (RecordingServiceClient v1Client = new(v1Host))
+        {
+            Expect("neue API: Profil nutzt die neue Schnittstelle", v1Client.ApiVersion == BoxApi.V1);
+            Expect("neue API: Datei-Adresse zeigt auf /api/v1/storage/file",
+                v1Client.BuildHttpFileUrl("/media/hdd/x.ts")
+                    == "http://192.168.178.222:80/api/v1/storage/file?path=%2Fmedia%2Fhdd%2Fx.ts",
+                v1Client.BuildHttpFileUrl("/media/hdd/x.ts"));
+            Expect("neue API: Live-Adresse bleibt am Streaming-Port",
+                v1Client.BuildVlcStreamUrl("361d03f300012b66", true) == "http://192.168.178.222:31339/id=361d03f300012b66",
+                v1Client.BuildVlcStreamUrl("361d03f300012b66", true));
+        }
+
+        // --- Neue API: Senderliste und EPG-Raster ---
+        const string v1Channels = """
+            {"items":[
+            {"id":"3f300012b66","number":1,"name":"Das Erste HD","kind":"tv","scrambled":false,"locked":false,
+             "satellite_position":192,"freq_id":1101,"transport_stream_id":1101,"original_network_id":1},
+            {"id":"361d03f300012b66","number":2,"name":"ZDF HD","kind":"tv","scrambled":false,"locked":false,
+             "satellite_position":192,"freq_id":1102,"transport_stream_id":1102,"original_network_id":1}],
+            "next_cursor":"361d03f300012b66"}
+            """;
+
+        const string v1Grid = """
+            {"items":[
+            {"channel_id":"361d03f300012b66","truncated":false,"events":[
+            {"id":"5c9","channel_id":"361d03f300012b66","title":"Tagesschau","description":"kurz","start":1704136500,"duration":2700},
+            {"id":"5ca","channel_id":"361d03f300012b66","title":"heute journal","description":"","start":1704139200,"duration":1800}]}],
+            "next_cursor":"361d03f300012b66"}
+            """;
+
+        List<Channel> v1List = NeutrinoV1Api.ParseChannels(v1Channels);
+        Expect("neue API: /channels liefert zwei Sender", v1List.Count == 2, "Anzahl=" + v1List.Count);
+        if (v1List.Count == 2)
+        {
+            Expect("neue API: Sendernummer als Text", v1List[1].Number == "2", v1List[1].Number);
+            Expect("neue API: Sendername", v1List[1].Name == "ZDF HD", v1List[1].Name);
+            Expect("neue API: Logo-Kurz-ID sind die unteren 48 Bit",
+                v1List[1].ShortId == "03f300012b66", v1List[1].ShortId);
+        }
+
+        Dictionary<string, string> v1Transponder = NeutrinoV1Api.ParseChannelTransponders(v1Channels);
+        Expect("neue API: Transponder je Sender erkannt",
+            v1Transponder.Count == 2
+            && v1Transponder[NeutrinoV1Api.NormalizeChannelId("361d03f300012b66")] == "192:1102:1102:1",
+            v1Transponder.Count.ToString());
+
+        Expect("neue API: Sender-IDs werden normalisiert",
+            NeutrinoV1Api.NormalizeChannelId("03f300012b66") == NeutrinoV1Api.NormalizeChannelId("3f300012b66"));
+
+        const string v1Bouquets = "{\"items\":[{\"id\":1,\"name\":\"Favoriten\",\"tv_count\":2}]}";
+        List<Bouquet> v1BouquetsParsed = NeutrinoV1Api.ParseBouquets(v1Bouquets);
+        Expect("neue API: /bouquets liefert das Bouquet",
+            v1BouquetsParsed.Count == 1 && v1BouquetsParsed[0].Number == "1" && v1BouquetsParsed[0].Name == "Favoriten",
+            v1BouquetsParsed.Count.ToString());
+
+        const long v1Now = 1704137400;   // 15 Minuten nach Beginn der "Tagesschau" (2700 s)
+        Dictionary<string, List<EpgEvent>> v1Guide = NeutrinoV1Api.ParseEpgGrid(v1Grid, v1Now);
+        List<Channel> v1EpgList = NeutrinoV1Api.ParseChannels(v1Channels);
+        NeutrinoV1Api.ApplyEpg(v1EpgList, v1Guide, v1Now);
+        Expect("neue API: laufende Sendung wird erkannt",
+            v1EpgList[1].FirstEpg.Description == "Tagesschau" && v1EpgList[1].FirstEpg.TotalMinutes == 45,
+            v1EpgList[1].FirstEpg.Description);
+        Expect("neue API: zweite Sendung ist die folgende",
+            v1EpgList[1].SecondEpg.Description == "heute journal", v1EpgList[1].SecondEpg.Description);
+        Expect("neue API: Startzeit der Sendung als Uhrzeit",
+            v1EpgList[1].FirstEpg.StartTime
+                == DateTimeOffset.FromUnixTimeSeconds(1704136500).ToLocalTime()
+                    .ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+            v1EpgList[1].FirstEpg.StartTime);
+        Expect("neue API: Fortschritt aus dem EPG-Raster (33 %)",
+            Near(ChannelItem.ComputeProgress(v1EpgList[1].FirstEpg, TimeSpan.Zero), 0.33) == 1,
+            v1EpgList[1].FirstEpg.Percentage);
+        Expect("neue API: bereits gelaufene Zeit der Sendung",
+            v1EpgList[1].FirstEpg.TimeElapsed == "15", v1EpgList[1].FirstEpg.TimeElapsed);
+        Expect("neue API: Sender ohne Sendungen bleibt leer", v1EpgList[0].FirstEpg.IsEmpty);
+
+        List<Channel> v1Upcoming = NeutrinoV1Api.ParseChannels(v1Channels);
+        NeutrinoV1Api.ApplyEpg(v1Upcoming, v1Guide, 1704136400);   // noch vor der ersten Sendung
+        Expect("neue API: ohne laufende Sendung zeigt der Balken die nächste",
+            v1Upcoming[1].FirstEpg.Description == "Tagesschau", v1Upcoming[1].FirstEpg.Description);
+
+        // --- Neue API: Timer, laufende Aufnahmen, Dateien, Einstellungen ---
+        const string v1Timers = """
+            {"items":[{"id":17,"kind":"record","channel_id":"361d03f300012b66","start":1704136500,"stop":1704140100,
+            "title":"Testaufnahme","repeat":0,"repeat_count":0,"state":2,"announce":1704136200,
+            "epg_id":"5c9","epg_start":1704136500,"standby_on":false,"recording_dir":"/media/hdd"}]}
+            """;
+
+        List<TimerItem> v1TimersParsed = NeutrinoV1Api.ParseTimers(v1Timers,
+            key => key == NeutrinoV1Api.NormalizeChannelId("361d03f300012b66") ? "ZDF HD" : string.Empty);
+        Expect("neue API: /timers liefert einen Timer", v1TimersParsed.Count == 1, "Anzahl=" + v1TimersParsed.Count);
+        if (v1TimersParsed.Count == 1)
+        {
+            Expect("neue API: Timer-Nummer", v1TimersParsed[0].Id == "17", v1TimersParsed[0].Id);
+            Expect("neue API: Timer-Art", v1TimersParsed[0].Type == "record", v1TimersParsed[0].Type);
+            Expect("neue API: Timer-Zeiten in Unix-Sekunden",
+                v1TimersParsed[0].AlarmTime == 1704136500 && v1TimersParsed[0].StopTime == 1704140100);
+            Expect("neue API: kompletter Timer laeuft jetzt",
+                v1TimersParsed[0].IsRunning(1704137400) && !v1TimersParsed[0].IsRunning(1704140200));
+            Expect("neue API: Sendername des Timers",
+                v1TimersParsed[0].ChannelName == "ZDF HD", v1TimersParsed[0].ChannelName);
+        }
+
+        const string v1Recordings = """
+            {"items":[{"id":17,"channel_id":"361d03f300012b66","title":"Testaufnahme","start":1704136500,
+            "path":"/media/hdd/Testaufnahme.ts","size":0,"timeshift":false,"started_by":"timer"}]}
+            """;
+
+        List<RunningRecording> v1Running = NeutrinoV1Api.ParseRecordings(v1Recordings);
+        Expect("neue API: /recordings liefert die laufende Aufnahme",
+            v1Running.Count == 1 && v1Running[0].EventId == 17
+            && v1Running[0].ChannelId == "361d03f300012b66" && v1Running[0].Start == 1704136500,
+            v1Running.Count.ToString());
+
+        const string v1Files = """
+            {"items":[{"id":"movies","kind":"dir","attributes_read":true,"size":4096},
+            {"id":"Aufnahme 1.ts","kind":"regular","attributes_read":true,"size":1136242099}]}
+            """;
+
+        List<FileEntry> v1FileList = NeutrinoV1Api.ParseFiles(v1Files, "/media/hdd");
+        Expect("neue API: /storage/files liefert zwei Einträge", v1FileList.Count == 2, "Anzahl=" + v1FileList.Count);
+        if (v1FileList.Count == 2)
+        {
+            Expect("neue API: Ordner erkannt", v1FileList[0].IsDirectory);
+            Expect("neue API: absoluter Pfad aus dem Elternordner",
+                v1FileList[1].FullPath == "/media/hdd/Aufnahme 1.ts", v1FileList[1].FullPath);
+            Expect("neue API: Dateigröße", v1FileList[1].Size == 1136242099, v1FileList[1].Size.ToString());
+        }
+
+        Expect("neue API: Aufnahmeverzeichnis aus /settings",
+            NeutrinoV1Api.ParseSetting("{\"items\":[{\"id\":\"network_nfs_recordingdir\",\"value\":\"/media/hdd/movie\"}]}",
+                "network_nfs_recordingdir") == "/media/hdd/movie");
+        Expect("neue API: unbekannte Einstellung ergibt nichts",
+            NeutrinoV1Api.ParseSetting("{\"items\":[]}", "network_nfs_recordingdir") is null);
+
+        DateTime localStart = new(2024, 1, 1, 20, 15, 0);
+        Expect("neue API: lokale Zeit wird zu Unix-Sekunden umgerechnet",
+            NeutrinoV1Api.TryParseLocalUnix("2024-01-01T20:15:00", out long localUnix)
+            && localUnix == new DateTimeOffset(localStart).ToUnixTimeSeconds(),
+            "Unix=" + localUnix.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Expect("neue API: \"0\" und leere Angaben ergeben keine Zeit",
+            !NeutrinoV1Api.TryParseLocalUnix("0", out _) && !NeutrinoV1Api.TryParseLocalUnix(string.Empty, out _));
+        Expect("neue API: leere und kaputte Antworten ergeben leere Listen",
+            NeutrinoV1Api.ParseChannels("{}").Count == 0
+            && NeutrinoV1Api.ParseTimers("kein json").Count == 0
+            && NeutrinoV1Api.ParseFiles(string.Empty, "/x").Count == 0
+            && NeutrinoV1Api.ParseRecordings("[]").Count == 0
+            && NeutrinoV1Api.ParseBouquets("{\"items\":[]}").Count == 0);
     }
 
     /// <summary>
@@ -565,6 +827,7 @@ public partial class App : Application
             if (window is MainWindow mainWindow)
             {
                 mainWindow.AllowClose = true;
+                mainWindow.SkipInitialLoad = true;
                 mainWindow.LoadDemoChannels();
             }
 

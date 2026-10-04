@@ -121,8 +121,56 @@ public partial class MainWindow : Window
     private bool _compact;
     private bool _exiting;
 
+    /// <summary>
+    /// Zeitpunkt des letzten erfolgreichen Ladens von Bouquet/Sender/EPG. Grundlage
+    /// der gebremsten Auto-Aktualisierung beim Einblenden.
+    /// </summary>
+    private DateTimeOffset _lastLoadUtc = DateTimeOffset.MinValue;
+
+    /// <summary>Verhindert, dass sich zwei Auto-Aktualisierungen überlagern.</summary>
+    private bool _autoRefreshing;
+
+    /// <summary>
+    /// Mindestabstand zweier automatischer Aktualisierungen. Das Original lud bei
+    /// jedem Ein-/Ausblenden nach; hier wird gebremst, damit hektisches Mausschwenken
+    /// am Bildschirmrand die Box nicht mit Anfragen überschüttet.
+    /// </summary>
+    internal static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// Entscheidet, ob beim Einblenden automatisch nachgeladen wird: nur wenn die
+    /// Option „EPG-Auto-Aktualisierung“ gesetzt ist und die Daten älter als
+    /// <see cref="AutoRefreshInterval"/> sind (oder noch nie geladen wurden).
+    /// </summary>
+    internal static bool ShouldAutoRefresh(bool enabled, DateTimeOffset lastLoadUtc, DateTimeOffset now)
+        => enabled && (lastLoadUtc == DateTimeOffset.MinValue || now - lastLoadUtc >= AutoRefreshInterval);
+
+    /// <summary>
+    /// Die Statuszeile im Kopf: der Meldungstext plus der Name des aktiven Profils,
+    /// damit auf den ersten Blick klar ist, mit welcher Box man verbunden ist.
+    /// Das Original zeigte dort nur „Verbunden!“ bzw. „Nicht verbunden!“
+    /// ($ei[100]/$ei[99], S.TV.au3 Z. 3670/3678). Ohne Profilnamen bleibt der Text
+    /// unverändert – so sieht die Zeile aus, wenn gar kein Profil geladen ist.
+    /// </summary>
+    internal static string StatusLine(string text, string? profileName)
+        => string.IsNullOrEmpty(profileName) ? text : text + " · " + profileName;
+
     /// <summary>Erlaubt das Schliessen trotz Tray-Verhalten (Selbsttest/Rendering).</summary>
     internal bool AllowClose { get; set; }
+
+    /// <summary>
+    /// Nur für <c>--render</c>: unterdrückt das Laden beim Start, damit die
+    /// Beispieldaten (<see cref="LoadDemoChannels"/>) stehen bleiben. Ohne das
+    /// überschreibt der erste Netzabruf sie wieder mit „Keine Verbindung zur Box“.
+    /// </summary>
+    internal bool SkipInitialLoad { get; set; }
+
+    /// <summary>
+    /// Nur für den Selbsttest: was im Kopf unter „TC.TV“ steht (Statuszeile und die
+    /// Kurzinfo, die als Tooltip daran hängt).
+    /// </summary>
+    internal (string Text, string Tip) StatusInfoForSelfTest
+        => (StatusText.Text, StatusText.ToolTip as string ?? string.Empty);
 
     /// <summary>
     /// Nur für die Entwicklung (<c>--render</c>): füllt die Senderliste mit
@@ -354,12 +402,34 @@ public partial class MainWindow : Window
 
     private void ShowWindow()
     {
-        if (!IsVisible)
+        bool wasHidden = !IsVisible;
+        if (wasHidden)
         {
             Show();
         }
 
         BeginAnimation(OpacityProperty, new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(220)));
+
+        // „EPG-Auto-Aktualisierung“: beim Einblenden des Fensters werden Sender und
+        // EPG des aktuellen Bouquets von der Box neu geholt (Original: _1ak/_1al →
+        // _1ag()). Gebremst, damit hektisches Mausschwenken am Rand nicht jede
+        // Bewegung nachladen lässt.
+        if (wasHidden && !_autoRefreshing
+            && ShouldAutoRefresh(_session.Settings.FadeInAutoRefresh, _lastLoadUtc, DateTimeOffset.UtcNow))
+        {
+            _autoRefreshing = true;
+            Dispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    await AutoRefreshAsync();
+                }
+                finally
+                {
+                    _autoRefreshing = false;
+                }
+            });
+        }
     }
 
     private void HideWindow()
@@ -395,6 +465,12 @@ public partial class MainWindow : Window
 
     private async Task InitializeAsync()
     {
+        // Beim Rendern bleiben die Beispieldaten stehen (siehe SkipInitialLoad).
+        if (SkipInitialLoad)
+        {
+            return;
+        }
+
         await ReloadAsync();
     }
 
@@ -417,6 +493,7 @@ public partial class MainWindow : Window
 
             if (bouquets.Count == 0)
             {
+                _lastLoadUtc = DateTimeOffset.UtcNow;
                 ChannelList.ItemsSource = Array.Empty<ChannelItem>();
                 _channels.Clear();
                 _selected = null;
@@ -434,8 +511,15 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task LoadChannelsAsync(string bouquetNumber)
+    /// <summary>
+    /// Sender (mit EPG) eines Bouquets laden. <paramref name="preserveSelection"/>
+    /// behält die gerade markierte Zeile bei, wenn es den Sender noch gibt – so
+    /// wirkt die Auto-Aktualisierung nicht wie ein Neuladen der Liste.
+    /// </summary>
+    private async Task LoadChannelsAsync(string bouquetNumber, bool preserveSelection = false)
     {
+        string? previousId = preserveSelection ? _selected?.Id : null;
+
         SetStatus(Localization.T(15));
         List<Channel> channels = await _session.Client.GetBouquetAsync(bouquetNumber, _cts.Token);
         _channels = channels;
@@ -445,17 +529,52 @@ public partial class MainWindow : Window
 
         if (items.Count > 0)
         {
-            int activeIndex = channels.FindIndex(c => c.IsActiveChannel is "1" or "true");
-            ChannelList.SelectedIndex = activeIndex >= 0 ? activeIndex : 0;
+            int index = previousId is null
+                ? -1
+                : channels.FindIndex(c => RecordingServiceClient.ChannelIdsMatch(c.Id, previousId));
+
+            if (index < 0)
+            {
+                index = channels.FindIndex(c => c.IsActiveChannel is "1" or "true");
+            }
+
+            ChannelList.SelectedIndex = index >= 0 ? index : 0;
         }
 
         SetStatus(channels.Count > 0 ? Localization.T(100) : Localization.T(99), channels.Count > 0);
         SetEmptyHint(channels.Count == 0 ? Localization.T(17) : null);
+
+        // Frische Daten holen heißt: die Auto-Aktualisierung wartet wieder 60 s.
+        _lastLoadUtc = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Die Aktualisierung, die „EPG-Auto-Aktualisierung“ beim Einblenden auslöst.
+    /// Wie im Original (<c>_1af($ge[$i6][0])</c> + <c>_1ag()</c>) wird nur das
+    /// **aktuelle** Bouquet neu geholt, nicht die ganze Bouquetliste – die Auswahl
+    /// des Benutzers bleibt dadurch stehen.
+    /// </summary>
+    private async Task AutoRefreshAsync()
+    {
+        if (BouquetCombo.SelectedItem is Bouquet bouquet && bouquet.Number.Length > 0)
+        {
+            await LoadChannelsAsync(bouquet.Number, preserveSelection: true);
+            return;
+        }
+
+        await ReloadAsync();
     }
 
     private void SetStatus(string text, bool? connected = null)
     {
-        StatusText.Text = text;
+        Profile profile = _session.Profile;
+        StatusText.Text = StatusLine(text, profile.Name);
+
+        // Kurzinfo am Statuspunkt: welches Profil, welche Adresse, welche Schnittstelle.
+        StatusText.ToolTip = "Profil: " + (profile.Name.Length == 0 ? "-" : profile.Name)
+            + "\nBox:    " + profile.Host + ":" + profile.WebPort
+            + "\nAPI:    " + BoxApis.DisplayName(profile.ApiVersion);
+
         string key = connected switch
         {
             true => "Brush.Success",
@@ -556,7 +675,16 @@ public partial class MainWindow : Window
             await Task.Delay(500);
 
             string arguments;
-            if (_session.Profile.ReciProxy)
+            string? liveUrl = _session.Client.ApiVersion == BoxApi.V1
+                ? await _session.Client.GetStreamUrlAsync(channel.Id, _cts.Token)
+                : null;
+
+            if (liveUrl is not null)
+            {
+                // Neue API: die Box nennt die fertige Adresse (Port aus ihren Einstellungen).
+                arguments = _session.VlcOptions.BuildOptionString() + " " + liveUrl;
+            }
+            else if (_session.Profile.ReciProxy)
             {
                 await _session.Client.BuildLiveUrlAsync(_cts.Token);
                 await Task.Delay(ReciProxyDelayMs());

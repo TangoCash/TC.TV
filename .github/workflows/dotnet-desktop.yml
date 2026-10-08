@@ -10,6 +10,7 @@ name: Build & Test
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -19,6 +20,10 @@ jobs:
   build:
 
     runs-on: windows-latest
+    # "contents: write" erlaubt dem GITHUB_TOKEN, beim Tag-Push Tag und Release
+    # anzulegen (Standard wäre seit 2023 read-only).
+    permissions:
+      contents: write
     defaults:
       run:
         shell: pwsh
@@ -91,12 +96,36 @@ jobs:
     - name: Publish Standalone x86
       run: ./tools/publish-singlefile.ps1 -Variant Standalone -Architecture x86
 
+    # Alle vier Auslieferungen heissen TC.TV.exe (nur in anderen Ordnern).
+    # Für das Release werden sie mit eindeutigen Namen in "release/" abgelegt,
+    # damit sie als separate Downloads in einem Release stehen können.
+    - name: Prepare release files
+      run: |
+        New-Item -ItemType Directory -Path 'release' -Force | Out-Null
+        Copy-Item 'dist\TC.TV.exe'               'release\TC.TV-win-x64.exe'           -Force
+        Copy-Item 'dist\x86\TC.TV.exe'           'release\TC.TV-win-x86.exe'           -Force
+        Copy-Item 'dist\standalone\TC.TV.exe'    'release\TC.TV-win-x64-standalone.exe' -Force
+        Copy-Item 'dist\standalone\x86\TC.TV.exe' 'release\TC.TV-win-x86-standalone.exe' -Force
+        Get-ChildItem 'release' | ForEach-Object { Write-Output ("  {0,-34} {1,12:N0} B" -f $_.Name, $_.Length) }
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: TC.TV
         path: |
-          dist
+          release
           artifacts\selftest.log
         if-no-files-found: error
+
+    # Bei einem Tag-Push (z.B. "v1.0.0") ein GitHub-Release anlegen und jede EXE
+    # als eigenen Download-Anhang veröffentlichen. Auf Push/Pull-Request läuft
+    # dieser Schritt nicht.
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: release/*.exe
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

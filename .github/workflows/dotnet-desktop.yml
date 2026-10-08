@@ -1,63 +1,34 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# Build, Selbsttest und Auslieferung von TC.TV (WPF/.NET 8).
+#
+# - baut die Lösung (Release)
+# - führt den eingebauten Selbsttest aus (TC.TV.exe --selftest)
+# - erzeugt alle vier Auslieferungen (SingleFile/Standalone x64/x86)
+# - lädt die EXE-Dateien und das Selbsttest-Protokoll als Artefakte hoch
 
-# This workflow will build, test, sign and package a WPF or Windows Forms desktop application
-# built on .NET Core.
-# To learn how to migrate your existing application to .NET Core,
-# refer to https://docs.microsoft.com/en-us/dotnet/desktop-wpf/migration/convert-project-from-net-framework
-#
-# To configure this workflow:
-#
-# 1. Configure environment variables
-# GitHub sets default environment variables for every workflow run.
-# Replace the variables relative to your project in the "env" section below.
-#
-# 2. Signing
-# Generate a signing certificate in the Windows Application
-# Packaging Project or add an existing signing certificate to the project.
-# Next, use PowerShell to encode the .pfx file using Base64 encoding
-# by running the following Powershell script to generate the output string:
-#
-# $pfx_cert = Get-Content '.\SigningCertificate.pfx' -Encoding Byte
-# [System.Convert]::ToBase64String($pfx_cert) | Out-File 'SigningCertificate_Encoded.txt'
-#
-# Open the output file, SigningCertificate_Encoded.txt, and copy the
-# string inside. Then, add the string to the repo as a GitHub secret
-# and name it "Base64_Encoded_Pfx."
-# For more information on how to configure your signing certificate for
-# this workflow, refer to https://github.com/microsoft/github-actions-for-desktop-apps#signing
-#
-# Finally, add the signing certificate password to the repo as a secret and name it "Pfx_Key".
-# See "Build the Windows Application Packaging project" below to see how the secret is used.
-#
-# For more information on GitHub Actions, refer to https://github.com/features/actions
-# For a complete CI/CD sample to get started with GitHub Action workflows for Desktop Applications,
-# refer to https://github.com/microsoft/github-actions-for-desktop-apps
-
-name: .NET Core Desktop
+name: Build & Test
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
 
   build:
 
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-
-    runs-on: windows-latest  # For a list of available runner types, refer to
-                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
 
     env:
-      Solution_Name: TC.TV                         # Replace with your solution name, i.e. MyWpfApp.sln.
-      Test_Project_Path: src\TCTV\TCTV.csproj                 # Replace with the path to your test project, i.e. MyWpfApp.Tests\MyWpfApp.Tests.csproj.
+      Solution_Name: TCTV.Net.sln
+      Project_Path: src\TCTV\TCTV.csproj
+      Configuration: Release
+      # Ausgabepfad der normalen Builds (Any CPU -> net8.0-windows).
+      Build_Output: src\TCTV\bin\Release\net8.0-windows
 
     steps:
     - name: Checkout
@@ -65,49 +36,67 @@ jobs:
       with:
         fetch-depth: 0
 
-    # Install the .NET Core workload
-    - name: Install .NET Core
+    - name: Install .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
-    # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
-    - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v2
+    - name: Restore
+      run: dotnet restore $env:Solution_Name
 
-    # Execute all unit tests in the solution
-    - name: Execute unit tests
-      run: dotnet test
+    - name: Build
+      run: dotnet build $env:Solution_Name --configuration $env:Configuration --no-restore
 
-    # Restore the application to populate the obj folder with RuntimeIdentifiers
-    - name: Restore the application
-      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
-      env:
-        Configuration: ${{ matrix.configuration }}
-
-    # Decode the base 64 encoded pfx and save the Signing_Certificate
-    - name: Decode the pfx
+    # Der Selbsttest baut alle Fenster unsichtbar auf, führt alle eingebauten
+    # Prüfungen aus und beendet sich mit Exit-Code 0 (ok) bzw. 1 (ein FEHLER).
+    # TC.TV ist eine WinExe-App: deshalb Start-Process -Wait statt "& $exe",
+    # damit PowerShell auf das Ende wartet und der Exit-Code ankommt.
+    - name: Run self-test
       run: |
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
-        $certificatePath = Join-Path -Path $env:Wap_Project_Directory -ChildPath GitHubActionsWorkflow.pfx
-        [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
+        $exe = Join-Path $env:Build_Output 'TC.TV.exe'
+        if (-not (Test-Path $exe)) { throw "Build-Ausgabe nicht gefunden: $exe" }
 
-    # Create the app package by building and packaging the Windows Application Packaging project
-    - name: Create the app package
-      run: msbuild $env:Wap_Project_Path /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
-      env:
-        Appx_Bundle: Always
-        Appx_Bundle_Platforms: x86|x64
-        Appx_Package_Build_Mode: StoreUpload
-        Configuration: ${{ matrix.configuration }}
+        $dir = Join-Path $env:RUNNER_TEMP 'tctv-selftest'
+        if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
 
-    # Remove the pfx
-    - name: Remove the pfx
-      run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx
+        $proc = Start-Process -FilePath $exe -ArgumentList '--selftest', '--datadir', $dir -PassThru -Wait
 
-    # Upload the MSIX package: https://github.com/marketplace/actions/upload-a-build-artifact
+        $log = Join-Path $dir 'TC.TV_Workdir\selftest.log'
+        if (Test-Path $log) {
+            $ok   = @(Select-String -Path $log -Pattern '^OK').Count
+            $fail = @(Select-String -Path $log -Pattern '^FEHLER').Count
+            Write-Output "Selbsttest: OK=$ok FEHLER=$fail"
+            if ($fail -gt 0) {
+                Get-Content $log | Where-Object { $_ -like 'FEHLER*' }
+            }
+            # Protokoll für die Artefakte an einen festen Ort kopieren.
+            New-Item -ItemType Directory -Path 'artifacts' -Force | Out-Null
+            Copy-Item $log 'artifacts\selftest.log' -Force
+        }
+
+        if ($proc.ExitCode -ne 0) { throw "Selbsttest fehlgeschlagen (ExitCode $($proc.ExitCode))" }
+        Write-Output "Selbsttest abgeschlossen (ExitCode 0)."
+
+    # Alle vier Auslieferungen wie lokal (tools\publish-singlefile.ps1).
+    # Das Skript bricht bei Fehlern ab und prüft, dass genau eine Datei entsteht.
+    - name: Publish SingleFile x64
+      run: ./tools/publish-singlefile.ps1 -Variant SingleFile -Architecture x64
+
+    - name: Publish SingleFile x86
+      run: ./tools/publish-singlefile.ps1 -Variant SingleFile -Architecture x86
+
+    - name: Publish Standalone x64
+      run: ./tools/publish-singlefile.ps1 -Variant Standalone -Architecture x64
+
+    - name: Publish Standalone x86
+      run: ./tools/publish-singlefile.ps1 -Variant Standalone -Architecture x86
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: MSIX Package
-        path: ${{ env.Wap_Project_Directory }}\AppPackages
+        name: TC.TV
+        path: |
+          dist
+          artifacts\selftest.log
+        if-no-files-found: error
+

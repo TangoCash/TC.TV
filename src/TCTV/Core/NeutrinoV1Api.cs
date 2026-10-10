@@ -1189,13 +1189,24 @@ public sealed class NeutrinoV1Api : BoxApiClient
     // Umschalten und Streaming
     // ---------------------------------------------------------------------
 
-    /// <summary>Umschalten auf einen Sender (POST /api/v1/zap); weckt eine Box im Standby.</summary>
+    /// <summary>
+    /// Umschalten auf einen Sender (POST /api/v1/zap), ohne die Box aus dem Standby
+    /// zu wecken: <c>wake</c> bleibt false. Der Zap dient hier nur dem Streamen –
+    /// die Adresse liefert <c>GET /api/v1/stream/{id}</c> – und darf eine Box im
+    /// Standby nicht einschalten. Eine Box im Standby verweigert den Zap deshalb
+    /// mit 409 (BoxInStandby) und bleibt im Standby; der Stream über die Adresse
+    /// funktioniert trotzdem, weil der Tuner erst beim Öffnen der Adresse belegt wird.
+    /// </summary>
     public override async Task ZapToAsync(string channelId, CancellationToken cancellationToken = default)
     {
-        string body = "{\"channel_id\":" + JsonSerializer.Serialize(channelId) + ",\"wake\":true}";
+        string body = BuildZapBody(channelId);
         await RequestTextAsync(HttpMethod.Post, Prefix + "/zap", body, withSession: true, cancellationToken)
             .ConfigureAwait(false);
     }
+
+    /// <summary>Body von <c>POST /api/v1/zap</c>: <c>wake</c> ist immer false.</summary>
+    public static string BuildZapBody(string channelId)
+        => "{\"channel_id\":" + JsonSerializer.Serialize(channelId) + ",\"wake\":false}";
 
     /// <summary>Verbindungstest anstelle von /control/zapto (das die neue API nicht kennt).</summary>
     public override async Task<string?> ZapToProbeAsync(CancellationToken cancellationToken = default)

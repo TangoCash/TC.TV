@@ -210,8 +210,10 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   * **Umsetzung der Unterschiede** zur alten API: Senderliste und EPG kommen aus
     zwei Aufrufen (die Sendungen des Bouquets werden über `epg/grid` geholt und
     auf die Sender verteilt – erste = laufende bzw. nächste, zweite = folgende);
-    Timer werden in **Unix-Sekunden** angelegt (`kind`); eine Box im Standby wird
-    per `wake` geweckt; die Sender des laufenden Transponders werden aus
+    Timer werden in **Unix-Sekunden** angelegt (`kind`); der Zap (`POST /api/v1/zap`)
+    sendet `wake:false`, damit eine Box im Standby beim Streamen nicht geweckt wird
+    (die Live-Adresse liefert `GET /api/v1/stream/{id}`); die Sender des laufenden
+    Transponders werden aus
     Satellitenposition/Transponderschlüssel/Transportstrom der Senderliste
     berechnet (die neue API kennt kein `currenttpchannels`); Dateien gehen über
     `/api/v1/storage/file` und werden mit einem kurzlebigen Medien-Token aus

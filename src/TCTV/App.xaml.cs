@@ -730,6 +730,10 @@ public partial class App : Application
             && NeutrinoV1Api.ParseFiles(string.Empty, "/x").Count == 0
             && NeutrinoV1Api.ParseRecordings("[]").Count == 0
             && NeutrinoV1Api.ParseBouquets("{\"items\":[]}").Count == 0);
+
+        Expect("neue API: Zap weckt die Box nicht (wake:false)",
+            NeutrinoV1Api.BuildZapBody("361d03f300012b66") == "{\"channel_id\":\"361d03f300012b66\",\"wake\":false}",
+            NeutrinoV1Api.BuildZapBody("361d03f300012b66"));
     }
 
     /// <summary>

@@ -1,34 +1,11 @@
-# TC.TV – .NET-Portierung (WPF)
+# TC.TV – WPF-Client für Neutrino-Receiver
 
-Portierung des ursprünglichen, **dekompilierten AutoIt-Skripts** (6.550 Zeilen,
-188 Funktionen, obfuskierte Variablennamen `$0`…`$1b8`) in eine moderne
-**.NET-8-WPF-Anwendung**.
+**TC.TV** ist eine **.NET-8-WPF-Anwendung**: ein halbtransparentes
+Einblendfenster am Bildschirmrand mit Sender-/EPG-Liste, Video-Browser, Timern,
+Profilen und VLC-Streaming für Neutrino-basierte Receiver (Coolstream/CST).
 
-Das Original war ein Client für den **DVBViewer Recording Service**: Ein
-halbtransparentes Einblendfenster am Bildschirmrand mit Sender-/EPG-Liste,
-Video-Browser, Timern, Profilen und VLC-Streaming.
-
-> **Das Originalmaterial ist nicht mehr Teil des Projektordners.** Es wurde auf
-> Wunsch ausgelagert und liegt unverändert (mit SHA256-Prüfsummen und
-> Wiederherstellungsanleitung) in `C:\tctv-autit-originals\`:
-> `App/S.TV.au3`, `App/AutoIt3.exe`, `S.TV.vbs` und `tools/extract.ps1`.
-> Die daraus erzeugten Dateien sind im Projekt enthalten (`src/TCTV/Generated/`),
-> es wird also nichts zum Bauen oder Ausführen gebraucht.
-
-> **Umbenennung:** Das Projekt hiess bis zur Umstellung auf die
-> `/control/`-API **S.TV** und heisst jetzt **TC.TV**. Umbenannt wurden alle
-> Bezeichner der Portierung – Assemblename (`TC.TV.exe`), Wurzel-Namespace
-> (`TCTV`), Projektordner (`src/TCTV`), Solution (`TCTV.Net.sln`),
-> Fenster-/Meldungstitel, Mutex (`Local\TC.TV.Net`), Datenordner
-> (`%APPDATA%\TC.TV\TC.TV_Workdir`, `TC.TV.ini`) und die Anzeigenamen in den
-> Sprachstrings.
->
-> Aus dem Original übernommen (nicht umbenannt, weil es zu dessen Daten gehört):
-> der Name der eingebetteten Ressource `sTV.ico` (u. a. `AppPaths.Temp("sTV.ico")`
-> und `Assets/sTV.ico`).
-> Alte Datenbestände werden erkannt: ein vorhandenes `S.TV_Workdir` samt
-> `S.TV.ini` wird beim ersten Start übernommen und die INI auf `TC.TV.ini`
-> umgezogen; `STV_DATADIR` gilt weiterhin (neu: `TCTV_DATADIR`).
+Es werden zwei Box-Schnittstellen unterstützt: die klassische `/control/`-API
+und die neue REST-API `/api/v1/` des NI-Images (siehe „Box-Schnittstelle“).
 
 
 ---
@@ -84,7 +61,7 @@ Beim ersten Start entsteht **im Benutzerprofil** (nicht im Programmordner):
 
 ```
 %APPDATA%\TC.TV\TC.TV_Workdir\
-├── TC.TV.ini             # Allgemeine Einstellungen (identische Schlüssel wie im Original)
+├── TC.TV.ini             # Allgemeine Einstellungen
 ├── Box100.conf3          # Empfängerprofil(e)
 ├── Logos/                # heruntergeladene Senderlogos (ShortId + ".png")
 ├── VLCPortable/          # optionaler portabler VLC
@@ -93,13 +70,10 @@ Beim ersten Start entsteht **im Benutzerprofil** (nicht im Programmordner):
 
 * Der Programmordner bleibt dadurch sauber und kann schreibgeschützt sein
   (`Program Files`, Netzlaufwerk, USB-Stick).
-* **Übernahme:** Liegt noch ein Datenbestand der früheren Fassung vor, wird er beim
-  ersten Start einmalig ins Profil kopiert (`Temp` ausgenommen) – entweder
-  `TC.TV_Workdir`/`S.TV_Workdir` neben der EXE **oder** das frühere
-  `%APPDATA%\S.TV\S.TV_Workdir`. Eine `S.TV.ini` wird dabei auf `TC.TV.ini`
-  umbenannt. Vorhandene Daten im Profil werden **nie** überschrieben – der
-  Vorgang steht im Kopf von `selftest.log`.
-  im Kopf von `selftest.log`.
+* **Übernahme:** Liegt noch ein Datenbestand einer früheren Fassung vor, wird er
+  beim ersten Start einmalig ins Profil kopiert (`Temp` ausgenommen). Vorhandene
+  Daten im Profil werden **nie** überschrieben – der Vorgang steht im Kopf von
+  `selftest.log`.
 * **Verschieben (portabel/Test):** Schalter `--datadir <Ordner>` oder
   Umgebungsvariable `TCTV_DATADIR`; der Schalter hat Vorrang. Beispiel:
 
@@ -117,8 +91,8 @@ Zum Testen muss im Profil (`Box100.conf3`) die **IP der Box** gesetzt werden
 | Pfad | Inhalt |
 |---|---|
 | `src/TCTV/TCTV.csproj` | WPF-Projekt, `net8.0-windows`, Ergebnis `TC.TV.exe` |
-| `src/TCTV/Assets/sTV.ico` | Original-Icon (aus den eingebetteten Ressourcen) als EXE-Icon |
-| `src/TCTV/Generated/` | **erzeugt** aus dem Original-AutoIt-Skript (siehe unten) – im Projekt enthalten |
+| `src/TCTV/Assets/sTV.ico` | Anwendungs-Icon als EXE-Icon |
+| `src/TCTV/Generated/` | erzeugte Sprach- und Ressourcentabellen (im Projekt enthalten) |
 | `src/TCTV/Core/` | Konfiguration, Box-Schnittstellen (alt/neu), VLC, Themes, Localization, Modelle |
 | `src/TCTV/Styles/Controls.xaml` | Style-System (Buttons, Eingaben, Listen, Karten, ScrollBar) |
 | `src/TCTV/Views/` | Haupt-, Einstellungs-, Profil-, Video- und Eingabefenster |
@@ -128,30 +102,15 @@ Zum Testen muss im Profil (`Box100.conf3`) die **IP der Box** gesetzt werden
 
 ### Generierte Dateien
 
-`src/TCTV/Generated/` enthält zwei aus dem AutoIt-Original erzeugte Tabellen
-(Erzeuger: `extract.ps1`, liegt im Archiv `C:\tctv-autit-originals\`):
+`src/TCTV/Generated/` enthält zwei erzeugte Tabellen:
 
-* `LocalizationTable.cs` – die komplette **Sprach-Tabelle `$ei[324][2]`**
-  (Deutsch/Englisch, alle 324 Zeilen inkl. `@LF`-Umbrüchen).
+* `LocalizationTable.cs` – die komplette **Sprach-Tabelle** (Deutsch/Englisch,
+  alle 324 Zeilen inkl. `@LF`-Umbrüchen).
 * `EmbeddedResources.cs` – die **7 eingebetteten Ressourcen**
   (`sTV.ico`, `deutsch.bmp`, `english.bmp`, `keinBild.jpg`, `refresh.png`,
   `movie1.ico`, `folder1.ico`) als Base64 inkl. LZNT1-Kennzeichnung.
 
-Neu erzeugen (nur nötig, wenn das Original geändert wird):
-
-```
-powershell -File tools/extract.ps1 `
-  -Source  ".\App\S.TV.au3" `
-  -OutDir  ".\src\TCTV\Generated"
-```
-
-> Dafür `App/` und `extract.ps1` vorher aus dem Archiv zurückkopieren – siehe
-> `C:\tctv-autit-originals\README.txt`.
-> Die Blobs sind **byte-identisch** mit dem Original. `ResourceProvider`
-> dekodiert Base64 und entpackt mit `RtlDecompressBuffer`
-> (COMPRESSION_FORMAT_LZNT1) – genau wie AutoIts `_1b6`/`_1b7`.
-> Geprüft: ICO-/BMP-/GIF-/PNG-Signaturen und Originalgrößen
-> (z. B. `sTV.ico` = 175.749 Bytes mit 9 Bildern).
+`ResourceProvider` dekodiert die Ressourcen (Base64 + LZNT1) zur Laufzeit.
 
 
 ---
@@ -161,27 +120,26 @@ powershell -File tools/extract.ps1 `
 ### Umgesetzt
 
 **Kern / Konfiguration**
-* `IniFile` mit AutoIt-kompatiblen Semantiken (`IniRead`/`IniWrite`/`IniDelete`):
+* `IniFile` zum Lesen/Schreiben/Löschen von INI-Werten:
   case-insensitive Abschnitts-/Schlüsselnamen, Standardwerte, Anlegen bei Bedarf,
   Erhalt von Reihenfolge/Kommentaren.
-* `AppSettings` mit **exakt denselben Schlüsseln** und Standardwerten
-  (`Benutzerdaten`, `Optionen`, `VLC Fenster`, `Programmdaten`) – inkl. der
-  Original-Tippfehler (`Traspondersender markieren`, `Fenstergröße_fest`).
+* `AppSettings` mit den Abschnitten `Benutzerdaten`, `Optionen`, `VLC Fenster`
+  und `Programmdaten` (inkl. der überlieferten Schlüsselnamen wie
+  `Traspondersender markieren`, `Fenstergröße_fest`).
 * `ProfileStore`/`Profile`: Profile als `*.conf3` im Arbeitsverzeichnis,
-  aktives Profil in `Benutzerdaten\Profil`, Defaults `root`/`coolstream`/`80`/`21`
-  wie im Original.
+  aktives Profil in `Benutzerdaten\Profil`, Defaults `root`/`coolstream`/`80`/`21`.
 * `Localization` (DE/EN) über die extrahierte Tabelle.
-* `Theme` mit den Farbtabellen `$lf[3][11]`. Das Standarddesign ist
+* `Theme` mit Farbtabellen. Das Standarddesign ist
   **Dark orange** mit den Farben von neutrino-images.de; „1“ = dunkler, fast
-  transparenter Rahmen (`0x252525`, WinSetTrans 50).
+  transparenter Rahmen (`0x252525`, 50 % Deckkraft).
 
 **Box-Schnittstelle** (`BoxApiClient`, `LegacyControlApi`, `NeutrinoV1Api`,
 `RecordingServiceClient`)
 
 Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
 
-* **Alte API `/control/`** (Standard) – `LegacyControlApi`, genau die Endpunkte des
-  Originalprogramms: `/control/info`, `/control/getmode`, `/control/gettime?rawtime`,
+* **Alte API `/control/`** (Standard) – `LegacyControlApi`, folgende Endpunkte:
+  `/control/info`, `/control/getmode`, `/control/gettime?rawtime`,
   `/control/standby`, `/control/zapto`, `/control/getbouquets`,
   `/control/getbouquet?…&epg=true&format=xml`, `/control/getdir`,
   `/control/getmovies`, `/control/file?action=list`, `/control/timer`
@@ -235,29 +193,27 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   Box man verbunden ist (`MainWindow.SetStatus` + `StatusLine`). Der Statuspunkt
   hängt mit der Maus an einem Tooltip, der Profil, Adresse und Schnittstelle
   nennt (z. B. „Profil: Box100 / Box: 192.168.178.222:80 / API: Alte API
-  (/control/)“). Das Original schrieb dort nur „Verbunden!“/„Nicht verbunden!“
-  ($ei[100]/$ei[99], S.TV.au3 Z. 3670/3678).
+  (/control/)“).
 * **Fade-in/Fade-out** per Mausposition an der Bildschirmkante, konfigurierbare
   Verzögerung (`fade-in-Verzögerung in Millisekunden`), Pinnen per Tray-Klick.
 * **EPG-Auto-Aktualisierung** (`Optionen\fade-in-Auto-Aktualisierung`): ist sie
   gesetzt, holt TC.TV beim **Einblenden** des Fensters EPG und Sender des
   aktuellen Bouquets neu von der Box – man muss also nicht „EPG aktualisieren“
-  drücken. Im Original geschah das bei jedem Ein- und Ausblenden
-  (`_1ak`/`_1al` → `_1ag`); hier ist es **gebremst**: nachgeladen wird höchstens
+  drücken. Dabei ist es **gebremst**: nachgeladen wird höchstens
   alle 60 Sekunden (`MainWindow.AutoRefreshInterval`), damit hektisches
   Mausschwenken am Rand die Box nicht mit Anfragen überschüttet. Das Fenster
   springt dabei nicht um: es bleibt beim gewählten Bouquet und beim markierten
   Sender. Der Tooltip der Option stammt aus Sprachzeile 51 („EPG wird direkt
   nach Einblendung des Fensters aktualisiert.“).
-* **Tray-Icon** aus der Original-`sTV.ico` mit Menü.
-* Hotkeys wie im Original: `f` = Fenster verbreitern (680 px), `s` = VLC-Stop,
+* **Tray-Icon** mit Menü.
+* Hotkeys: `f` = Fenster verbreitern (680 px), `s` = VLC-Stop,
   `Esc` = ausblenden.
 * `SettingsWindow`, `ProfilesWindow`, `VideoWindow`, `PromptWindow`.
 * **Modernes Design**: eigenes Style-System, dynamisches Theming, Icon-Buttons –
   siehe Abschnitt [Oberfläche & Design](#oberfläche--design).
 
 **VLC-Integration** (`VlcOptions`, `VlcLauncher`)
-* Kommandozeilenoptionen in der Originalreihenfolge `$l0…$l9`
+* Kommandozeilenoptionen
   (`--video-on-top`, `--qt-notification=0`, `--no-qt-video-autoresize`,
   `--qt-start-minimized`, `--no-video-title-show`, `--qt-minimal-view`,
   `--no-qt-name-in-title`, `--deinterlace=-1`, `--fullscreen`, `--one-instance`).
@@ -274,20 +230,18 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   `/api/v1/storage/files`, abgespielt über `/api/v1/storage/file` mit
   Medien-Token.
 * Stoppen beim Zap: Taste `s` an das VLC-Fenster bzw. Prozess beenden
-  (`VLC erhalten beim Zap`, `086i`, `Beenden`).
+  (`VLC erhalten beim Zap`, `Beenden`).
 
 ### Nicht übernommen (bewusste Auslassungen)
 
-Das Original enthält 188 Funktionen; ein Teil davon ist **Skin-/Effekt- und
-Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
+Einige **Skin-/Effekt- und Sonderfunktionen** sind bewusst nicht enthalten:
 
-* GDI+-Sonderzeichen: eigene Bitmap-/Snapshot-Ansicht (`_10a`, `_116`), Logo-
-  Skalierung per `AnimateWindow` (`_15t`, `_15k`, `_1b8`).
+* Eigene Bitmap-/Snapshot-Ansicht und Logo-Skalierung.
 * ReciProxy-Steuerfenster mit komplexer Fade-/Größenanimation.
 * Die CST/Coolstream-Spezialpfade (`/var/tuxbox/config/zapit/bouquets.xml`,
   ubouquets/ubouquets-Merge) und die „Externe Box“-Erkennung per Ping.
-* IMDb-/TVspielfilm-Suche (`ShellExecute` auf Such-URLs).
-* Reine Kosmetik-Animationen über `GUIRegisterMsg` (WM_NOTIFY/WM_COMMAND).
+* IMDb-/TVspielfilm-Suche.
+* Reine Kosmetik-Animationen.
 
 ### Getestet
 
@@ -297,7 +251,7 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
 * VLC-Erkennung über `Program Files (x86)`.
 * `--selftest`: alle fünf Fenster (Main, Settings, Profiles, Video, Prompt)
   werden fehlerfrei aufgebaut (Exit-Code 0).
-* `--selftest`: **133 Prüfungen** mit synthetischen Original-Antworten
+* `--selftest`: **133 Prüfungen** mit synthetischen Antworten
   (Timer-XML ohne/mit Eintrag, `format=id`, ID-Vergleich, Transponder,
   `getdir`/`getmovies`/`file`-Listen, HTTP-Wiedergabe-URL, UTF-8-Umlaute,
   Latin-1-Rückfall, INI-Rundlauf, Fortschrittsberechnung, Themenauswahl,
@@ -375,7 +329,7 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
   kopiert und mit `DOTNET_ROOT` auf einen **leeren** Ordner plus
   `DOTNET_MULTILEVEL_LOOKUP=0` gestartet – also ohne irgendeine auffindbare
   .NET-Laufzeit: **ExitCode 0, 133/133 OK in 2 s**. x86: 66,4 MB, ebenfalls eine Datei.
-* EXE-Icon geprüft: `ExtractAssociatedIcon` liefert das Originalsymbol
+* EXE-Icon geprüft: `ExtractAssociatedIcon` liefert das Anwendungssymbol
   (TV mit Antenne), Icon-Größen 16–256 px.
 * Datenablage geprüft:
   * mit `--datadir <Ordner>` entsteht **nichts** neben der EXE und **nichts** in
@@ -389,7 +343,7 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
 **Nicht** getestet werden konnte die Kommunikation mit einer echten
 DVBViewer-Recording-Service-Box oder einer echten Box mit NI-Image (keine im
 Testsystem vorhanden). Die Endpunkte, XML-/JSON-Strukturen und Kommandozeilen
-wurden aus dem Originalcode bzw. den NI-Firmware-Quellen abgeleitet; für die
+wurden aus den NI-Firmware-Quellen abgeleitet; für die
 neue API zusätzlich gegen eine simulierte Box durchgespielt (siehe oben).
 
 ---
@@ -420,9 +374,8 @@ im **plain**-Format (`key=value` je Zeile).
 
 ### FTP entfernt – Wiedergabe über den Dateiserver der Box
 
-Die Originalfassung spielte Aufnahmen über `ftp://root:…@box/pfad` ab (der
-CST/Coolstream-FTP-Server). Das ist ersetzt; die Profile enthalten keine
-FTP-Zugangsdaten mehr.
+Aufnahmen werden nicht mehr über FTP (`ftp://root:…@box/pfad`) abgespielt; die
+Profile enthalten keine FTP-Zugangsdaten.
 
 Möglich wird das durch den **nhttpd der Box** (`src/nhttpd/nhttpd.conf.in`,
 `src/nhttpd/yconfig.h`, `mod_sendfile.cpp`):
@@ -505,7 +458,7 @@ gezählt, ob **überhaupt** Timer existieren. Da `format=xml` das Element `timer
 zweimal verwendet (Wurzel **und** Eintrag), lieferte die Abfrage selbst bei
 **null** Timern ein Ergebnis → die Meldung erschien bei **jedem** Streamstart.
 
-Korrekt umgesetzt ist jetzt die Original-Logik aus `_1aq`:
+Korrekt umgesetzt ist jetzt folgende Logik:
 
 1. **Multituner-Box** (`Profile.MultiTuner`) → keine Warnung.
 2. **Aktuell laufende Aufnahmen** bestimmen: Timer aus `/control/timer?format=id`
@@ -519,14 +472,14 @@ Korrekt umgesetzt ist jetzt die Original-Logik aus `_1aq`:
    bei der neuen API aus Satellitenposition/Transponderschlüssel/Transportstrom
    der Senderliste berechnet) → keine Warnung.
 5. Nur wenn all das nicht zutrifft, erscheint die Meldung
-   `$ei[75]`/`$ei[54]` („Aufnahme läuft!“ / „Aktuell Streaming nur auf gleichem Transponder möglich.“)
-   und der Stream wird – wie im Original – **nicht** gestartet.
+   („Aufnahme läuft!“ / „Aktuell Streaming nur auf gleichem Transponder möglich.“)
+   und der Stream wird **nicht** gestartet.
 
 Zusätzlich parst `ParseTimersXml` nur noch `<timer>`-Elemente **mit** `<id>`
 (damit der Wurzelknoten nicht als Geister-Timer zählt) und liest Start/Ende aus
 `<alarm>/<stop>` → `<normal><digits>` (Unix-Sekunden).
 
-Der `--selftest` prüft diese Logik mit synthetischen Original-Antworten
+Der `--selftest` prüft diese Logik mit synthetischen Antworten
 (leere Timerliste, ein Timer, `format=id`-Zeilen, ID-Vergleich, Transponder).
 
 
@@ -565,8 +518,8 @@ Hauptfenster wird für die Kontrolle mit Beispieldaten gefüllt.
 
 Symptom: EPG-Texte erschienen als „Am 25. MÃ¤rz 1996 wird … entfÃ¼hrt“.
 
-Ursache: `GetTextAsync` dekodierte die Antwort mit **Latin-1**, um AutoIts
-`InetGet` nachzubilden. Die Box liefert aber **UTF-8** – `yhook.cpp`
+Ursache: `GetTextAsync` dekodierte die Antwort mit **Latin-1**. Die Box liefert
+aber **UTF-8** – `yhook.cpp`
 (`outValue` → `convert_UTF8_To_UTF8_XML`) und der Header
 `Content-Type: …; charset=UTF-8` belegen das. UTF-8-Bytes `C3 A4` („ä“) wurden
 dadurch zu „Ã¤“.
@@ -574,8 +527,8 @@ dadurch zu „Ã¤“.
 Lösung: `Core/TextEncoding.cs` dekodiert **UTF-8** und fällt nur dann auf
 Latin-1 zurück, wenn die Antwort kein gültiges UTF-8 ist (`DecoderFallbackException`).
 `RecordingServiceClient.DecodeText` und `IniFile` nutzen dieselbe Routine – so
-bleiben auch Umlaute in INI-Schlüsseln erhalten, selbst wenn die Datei noch von
-der AutoIt-Fassung (ANSI) stammt.
+bleiben auch Umlaute in INI-Schlüsseln erhalten, selbst wenn die Datei noch in
+ANSI vorliegt.
 
 Der `--selftest` prüft das jetzt mit echten Umlauten: UTF-8-Dekodierung, der
 Latin-1-Rückfall, die gesamte Kette XML-Bytes → `ParseBouquet` sowie ein
@@ -608,7 +561,7 @@ gestaltet – bei identischer Funktionalität und identischen Elementnamen.
 
 **Standarddesign: Dark orange (angelehnt an neutrino-images.de)**
 * Voreingestellt ist `Benutzerdaten\Theme=3` – auch bei leerem oder unbekanntem
-  Wert (also bei einer noch vom Original stammenden INI).
+  Wert.
 * Die Palette stammt aus dem NI-Forum (`styles/prosilver-ni/theme/custom.css`):
 
   | Rolle | Wert |
@@ -625,10 +578,9 @@ gestaltet – bei identischer Funktionalität und identischen Elementnamen.
 * Bei dunklen Themes stammen Fläche, Rahmen und Sekundärtext direkt aus der
   Farbtabelle, damit die Werte exakt der Vorlage entsprechen. Zusätzlich:
   Auswahlfläche = Fläche + 30 % Akzent, gedrückter Button = Akzent − 25 %.
-* Weitere Themes: „Dark grün“ (`2`, Original), „Hell“ (`4`, Original),
+* Weitere Themes: „Dark grün“ (`2`), „Hell“ (`4`),
   „TC.TV Overlay“ (`1`, dunkler Rahmen `0x252525`, stark transparent).
-  Das Original selbst kennt nur `1`, `2`, `3`; der Wert `4` ist neu und
-  kollidiert nicht (leer/`3` = Dark orange).
+  Leer/`3` = Dark orange (Standard).
 
 **Hauptfenster**
 * Kopfzeile mit Akzent-Badge, Titel, Statuspunkt (grün/rot/grau je nach
@@ -646,15 +598,14 @@ gestaltet – bei identischer Funktionalität und identischen Elementnamen.
 zweispaltigen Formularrastern, Feldlabels über den Eingaben und einer
 Buttonleiste; der Eingabedialog (`PromptWindow`) ist ebenfalls neu gestaltet.
 
-**Profilfenster** – wie im Original schließt **„Speichern“** das Fenster und
+**Profilfenster** – **„Speichern“** schließt das Fenster und
 übernimmt das bearbeitete Profil als aktuelles: die Werte gehen in die
 `.conf3`-Datei, der Name wird als `Benutzerdaten\Profil` in die INI geschrieben
 und das Hauptfenster lädt Profil und Senderliste neu
-(`ProfilesWindow.ApplyAndActivate()`, im Original der Speichern-Zweig mit
-`IniWrite($em,"Benutzerdaten","Profil",$nl)` + `_15t`/`GUIDelete`).
+(`ProfilesWindow.ApplyAndActivate()`).
 „Profil wechseln“ löst denselben Ablauf aus, „Zurück“ schließt ohne zu speichern.
 Neu im Profilfenster ist die Auswahl **API** (`Profildaten\API-Version`):
-„Alte API (/control/)“ (Standard, wie das Originalprogramm) oder
+„Alte API (/control/)“ (Standard) oder
 „Neue API (/api/v1/)“ für das NI-Image – siehe „Box-Schnittstelle“ oben.
 
 ### Entwickler-Werkzeuge
@@ -670,44 +621,14 @@ Neu im Profilfenster ist die Auswahl **API** (`Profildaten\API-Version`):
 Die Schalter werden nur ausgewertet, wenn sie übergeben werden; der normale
 Start ist davon unberührt. `--datadir` gilt für alle genannten Werkzeuge.
 
-
-## Abbildung Original → .NET
-
-| AutoIt | .NET |
-|---|---|
-| `Global $ei[324][2]` | `Generated/LocalizationTable.cs` + `Localization.T(i)` |
-| `_1b0`…`_1b5` (Base64 + `RtlDecompressBuffer`) | `ResourceProvider` |
-| `IniRead`/`IniWrite` | `IniFile` |
-| `$em`, `$ek`, `$ej`, `$el` | `AppPaths` |
-| `$fs` (Profil-`.conf3`) | `Profile` / `ProfileStore` (inkl. `API-Version` alt/neu) |
-| `$ie[1000][23]` | `Channel` + `EpgEvent` |
-| `InetGet` auf `/control/...` | `LegacyControlApi` (gewählt über das Profil) |
-| `GET/POST /api/v1/...` (NI-Image) | `NeutrinoV1Api` (gewählt über das Profil) |
-| `$l0`…`$l9` + `ShellExecute($kc, …)` | `VlcOptions.BuildOptionString()` + `VlcLauncher` |
-| `ShellExecute($kc, "… ftp://user:pass@box/pfad")` | `RecordingServiceClient.BuildHttpFileUrl()` → `http://host:webport/<absoluter Pfad>` |
-| `$lf[3][11]` | `Theme` |
-| `GUICreate`/`GUICtrlCreate*` | XAML (`MainWindow.xaml`, …) |
-| `_1aq` (Stream starten) | `MainWindow.StreamSelectedAsync()` |
-| `AnimateWindow`/`WinSetTrans` | WPF-`DoubleAnimation`/`Opacity` |
-
 ---
 
 ## Hinweise
 
-* Das **Originalmaterial** (`S.TV.au3`, `AutoIt3.exe`, `S.TV.vbs`, `extract.ps1`)
-  wurde aus dem Projektordner entfernt und liegt unverändert im Archiv
-  `C:\tctv-autit-originals\` (mit SHA256-Prüfsummen und
-  `README.txt` zur Wiederherstellung). Zum Bauen und Ausführen von TC.TV wird
-  davon nichts benötigt.
-* Der Anzeigename in den Sprachstrings wird beim Generieren ersetzt:
-  `extract.ps1` schreibt `S.TV` → `-ProductName` (Standard `TC.TV`), damit
-  die Tabelle `LocalizationTable.cs` reproduzierbar bleibt.
-* Konfigurations- und Profildateien bleiben zum Original kompatibel
-  (gleiche Schlüssel = gleiche INI). Zusätzlich steht in der Profildatei
-  `Profildaten\API-Version` (`alt`/`neu`); fehlt der Schlüssel, gilt die alte
-  API – Profile aus früheren Programmversionen laufen also unverändert.
+* In der Profildatei steht zusätzlich `Profildaten\API-Version` (`alt`/`neu`);
+  fehlt der Schlüssel, gilt die alte API – Profile aus früheren
+  Programmversionen laufen also unverändert.
 * INI und Box-Antworten werden als **UTF-8** gelesen – die Box liefert UTF-8
   (`charset=UTF-8`, `convert_UTF8_To_UTF8_XML`). Ist der Inhalt kein gültiges
-  UTF-8 (etwa eine noch von der AutoIt-Fassung in ANSI geschriebene INI), wird
-  automatisch auf Latin-1 zurückgefallen, damit Umlaute erhalten bleiben.
-  Geschrieben wird UTF-8 ohne BOM.
+  UTF-8 (etwa eine in ANSI geschriebene INI), wird automatisch auf Latin-1
+  zurückgefallen, damit Umlaute erhalten bleiben. Geschrieben wird UTF-8 ohne BOM.

@@ -590,8 +590,8 @@ public partial class App : Application
                     == "http://192.168.178.222:80/api/v1/storage/file?path=%2Fmedia%2Fhdd%2Fx.ts",
                 v1Client.BuildHttpFileUrl("/media/hdd/x.ts"));
             Expect("neue API: Live-Adresse bleibt am Streaming-Port",
-                v1Client.BuildVlcStreamUrl("361d03f300012b66", true) == "http://192.168.178.222:31339/id=361d03f300012b66",
-                v1Client.BuildVlcStreamUrl("361d03f300012b66", true));
+                v1Client.BuildVlcStreamUrl("361d03f300012b66") == "http://192.168.178.222:31339/id=361d03f300012b66",
+                v1Client.BuildVlcStreamUrl("361d03f300012b66"));
         }
 
         // --- Neue API: Senderliste und EPG-Raster ---

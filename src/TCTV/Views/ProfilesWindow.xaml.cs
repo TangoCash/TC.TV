@@ -27,7 +27,6 @@ public partial class ProfilesWindow : Window
         LabelWebPassword.Text = Localization.T(134);
         ExternalBox.Content = Localization.T(131);
         WebAuthBox.Content = "Web-Authentifikation";
-        ReciProxyBox.Content = Localization.T(160);
         ForceSwitchBox.Content = Localization.T(108);
         FavoritesBox.Content = Localization.T(159);
         MultiTunerBox.Content = Localization.T(91);
@@ -40,7 +39,7 @@ public partial class ProfilesWindow : Window
         LabelApi.Text = "API";
         ApiBox.ToolTip = "Alte API (/control/) = Originalprogramm; "
             + "Neue API (/api/v1/) = REST-Schnittstelle des NI-Images (Schreiben braucht "
-            + "Benutzer/Passwort, ReciProxy entfällt).";
+            + "Benutzer/Passwort).";
         ApiBox.Items.Clear();
         ApiBox.Items.Add(BoxApis.DisplayName(BoxApi.Legacy));
         ApiBox.Items.Add(BoxApis.DisplayName(BoxApi.V1));
@@ -72,8 +71,6 @@ public partial class ProfilesWindow : Window
         WebAuthBox.IsChecked = profile.WebAuthentication;
         WebUserBox.Text = profile.WebUser;
         WebPasswordBox.Password = profile.WebPassword;
-        ReciProxyDelayBox.Text = profile.ReciProxyDelay;
-        ReciProxyBox.IsChecked = profile.ReciProxy;
         ForceSwitchBox.IsChecked = profile.ForceSwitch;
         FavoritesBox.IsChecked = profile.FavoritesOnly;
         MultiTunerBox.IsChecked = profile.MultiTuner;
@@ -178,8 +175,6 @@ public partial class ProfilesWindow : Window
         profile.WebAuthentication = WebAuthBox.IsChecked == true;
         profile.WebUser = WebUserBox.Text.Trim();
         profile.WebPassword = WebPasswordBox.Password;
-        profile.ReciProxyDelay = ReciProxyDelayBox.Text.Trim();
-        profile.ReciProxy = ReciProxyBox.IsChecked == true;
         profile.ForceSwitch = ForceSwitchBox.IsChecked == true;
         profile.FavoritesOnly = FavoritesBox.IsChecked == true;
         profile.MultiTuner = MultiTunerBox.IsChecked == true;

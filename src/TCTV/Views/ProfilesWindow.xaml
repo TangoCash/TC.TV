@@ -95,14 +95,7 @@
 
                             <!-- rechte Spalte -->
                             <StackPanel Grid.Column="2">
-                                <StackPanel>
-                                    <TextBlock Text="ReciProxy Startverzögerung (s)" Style="{StaticResource FieldLabel}" />
-                                    <TextBox x:Name="ReciProxyDelayBox" Width="90" HorizontalAlignment="Left"
-                                             Style="{StaticResource InputBox}" />
-                                </StackPanel>
-
-                                <CheckBox x:Name="ReciProxyBox" Margin="0,16,0,0" />
-                                <CheckBox x:Name="ForceSwitchBox" Margin="0,8,0,0" />
+                                <CheckBox x:Name="ForceSwitchBox" />
                                 <CheckBox x:Name="FavoritesBox" Margin="0,8,0,0" />
                                 <CheckBox x:Name="MultiTunerBox" Margin="0,8,0,0" />
 

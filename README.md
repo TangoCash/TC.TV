@@ -2,7 +2,7 @@
 
 **TC.TV** ist eine **.NET-8-WPF-Anwendung**: ein halbtransparentes
 Einblendfenster am Bildschirmrand mit Sender-/EPG-Liste, Video-Browser, Timern,
-Profilen und VLC-Streaming für Neutrino-basierte Receiver (Coolstream/CST).
+Profilen und VLC-Streaming für Neutrino-basierte Receiver.
 
 Es werden zwei Box-Schnittstellen unterstützt: die klassische `/control/`-API
 und die neue REST-API `/api/v1/` des NI-Images (siehe „Box-Schnittstelle“).
@@ -127,7 +127,7 @@ Zum Testen muss im Profil (`Box100.conf3`) die **IP der Box** gesetzt werden
   und `Programmdaten` (inkl. der überlieferten Schlüsselnamen wie
   `Traspondersender markieren`, `Fenstergröße_fest`).
 * `ProfileStore`/`Profile`: Profile als `*.conf3` im Arbeitsverzeichnis,
-  aktives Profil in `Benutzerdaten\Profil`, Defaults `root`/`coolstream`/`80`/`21`.
+  aktives Profil in `Benutzerdaten\Profil`, Defaults `root`/`ni`/`80`.
 * `Localization` (DE/EN) über die extrahierte Tabelle.
 * `Theme` mit Farbtabellen. Das Standarddesign ist
   **Dark orange** mit den Farben von neutrino-images.de; „1“ = dunkler, fast
@@ -143,8 +143,8 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   `/control/standby`, `/control/zapto`, `/control/getbouquets`,
   `/control/getbouquet?…&epg=true&format=xml`, `/control/getdir`,
   `/control/getmovies`, `/control/file?action=list`, `/control/timer`
-  (`?format=xml`, `?format=id`, `?action=new`), `/control/currenttpchannels`,
-  `/control/build_live_url`. Basisauthentifikation über `NetworkCredential`
+  (`?format=xml`, `?format=id`, `?action=new`), `/control/currenttpchannels`.
+  Basisauthentifikation über `NetworkCredential`
   (`Web-Authentifikation`); XML-Parsing von
   `<channel>`/`<firstEPG>`/`<secondEPG>`, `<dirs>`, `<movies>`, `<filelist>` und
   der Timer-Liste. Die Datei-Endpunkte liefern **absolute Pfade** der Box
@@ -177,8 +177,7 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
     `/api/v1/storage/file` und werden mit einem kurzlebigen Medien-Token aus
     `POST /api/v1/token/media` in der Adresse abgespielt; als Live-Adresse dient
     `http://<host>:<StreamingPort>/id=<id>` (von `/api/v1/stream/{id}` geliefert,
-    mit Rückfall auf den Streaming-Port des Profils). **ReciProxy** gibt es im
-    neuen Image nicht mehr und entfällt dort.
+    mit Rückfall auf den Streaming-Port des Profils).
 
 **GUI (WPF)**
 * `MainWindow`: Einblendfenster am rechten/linken Rand, Topmost, ohne Taskleiste,
@@ -219,10 +218,8 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   `--no-qt-name-in-title`, `--deinterlace=-1`, `--fullscreen`, `--one-instance`).
 * Pfaderkennung: INI → `VLCPortable\VLCPortable.exe` → `Program Files`
   → `Program Files (x86)` → Registry `HKLM\Software\VideoLAN\VLC` (32/64-bit).
-* Live-Stream: `<host>:<StreamingPort>/id=<channelId>` bzw. `/ReciProxy`
-  (mit `build_live_url` und `ReciProxy\Startverzögerung` × 1000 ms). Bei der
-  neuen API wird die Adresse von `/api/v1/stream/{id}` übernommen; ReciProxy gibt
-  es dort nicht.
+* Live-Stream: `<host>:<StreamingPort>/id=<channelId>`. Bei der neuen API wird
+  die Adresse von `/api/v1/stream/{id}` übernommen.
 * **Aufnahme-/Video-Wiedergabe per HTTP** (kein FTP):
   `--one-instance http://<host>:<WebserverPort>/<absoluter Pfad>`
   (Leerzeichen → `%20`). Der Pfad stammt aus `/control/getdir`,
@@ -231,17 +228,6 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   Medien-Token.
 * Stoppen beim Zap: Taste `s` an das VLC-Fenster bzw. Prozess beenden
   (`VLC erhalten beim Zap`, `Beenden`).
-
-### Nicht übernommen (bewusste Auslassungen)
-
-Einige **Skin-/Effekt- und Sonderfunktionen** sind bewusst nicht enthalten:
-
-* Eigene Bitmap-/Snapshot-Ansicht und Logo-Skalierung.
-* ReciProxy-Steuerfenster mit komplexer Fade-/Größenanimation.
-* Die CST/Coolstream-Spezialpfade (`/var/tuxbox/config/zapit/bouquets.xml`,
-  ubouquets/ubouquets-Merge) und die „Externe Box“-Erkennung per Ping.
-* IMDb-/TVspielfilm-Suche.
-* Reine Kosmetik-Animationen.
 
 ### Getestet
 
@@ -341,7 +327,7 @@ Einige **Skin-/Effekt- und Sonderfunktionen** sind bewusst nicht enthalten:
     unverändert (die EXE schreibt dort nicht mehr hinein).
 
 **Nicht** getestet werden konnte die Kommunikation mit einer echten
-DVBViewer-Recording-Service-Box oder einer echten Box mit NI-Image (keine im
+Neutrino-Box oder einer echten Box mit NI-Image (keine im
 Testsystem vorhanden). Die Endpunkte, XML-/JSON-Strukturen und Kommandozeilen
 wurden aus den NI-Firmware-Quellen abgeleitet; für die
 neue API zusätzlich gegen eine simulierte Box durchgespielt (siehe oben).
@@ -444,11 +430,9 @@ Eigenschaften der Schnittstelle, die den Aufbau bestimmen:
   (`MAX_GRID_CHANNELS`) und endet mit fehlendem `next_cursor`; `limit` der
   Senderliste ist bei 500 gedeckelt (`kMaxPage`). Beides wird beim Blättern
   berücksichtigt.
-* **ReciProxy** kommt im neuen Image nicht mehr vor (kein Treffer im ganzen
-  Quellbaum) – bei der neuen API entfällt der Schalter, es wird
-  `http://<host>:<StreamingPort>/id=<id>` benutzt (`addressPrefix` in
-  `src/coreapi/streaming.cpp` baut genau dieses Format, mit dem
-  `streaming_port` der Box).
+* Als Live-Adresse wird `http://<host>:<StreamingPort>/id=<id>` benutzt
+  (`addressPrefix` in `src/coreapi/streaming.cpp` baut genau dieses Format, mit
+  dem `streaming_port` der Box).
 
 
 ### Behobener Fehler: dauerhafte Meldung „Aufnahme läuft!“

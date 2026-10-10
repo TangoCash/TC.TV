@@ -95,9 +95,6 @@ public sealed class RecordingServiceClient : IDisposable
     public Task<string?> GetCurrentTpChannelsAsync(CancellationToken cancellationToken = default)
         => _api.GetCurrentTpChannelsAsync(cancellationToken);
 
-    public Task<string?> BuildLiveUrlAsync(CancellationToken cancellationToken = default)
-        => _api.BuildLiveUrlAsync(cancellationToken);
-
     /// <summary>Live-Adresse eines Senders laut Box (nur die neue API kennt sie).</summary>
     public Task<string?> GetStreamUrlAsync(string channelId, CancellationToken cancellationToken = default)
         => _api.GetStreamUrlAsync(channelId, cancellationToken);
@@ -116,7 +113,7 @@ public sealed class RecordingServiceClient : IDisposable
     public Task<long> GetBoxTimeAsync(CancellationToken cancellationToken = default)
         => _api.GetBoxTimeAsync(cancellationToken);
 
-    public string BuildVlcStreamUrl(string channelId, bool reciProxy) => _api.BuildVlcStreamUrl(channelId, reciProxy);
+    public string BuildVlcStreamUrl(string channelId) => _api.BuildVlcStreamUrl(channelId);
 
     public void Dispose() => _api.Dispose();
 

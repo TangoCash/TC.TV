@@ -434,10 +434,6 @@ public sealed class LegacyControlApi : BoxApiClient
     public override async Task<string?> GetCurrentTpChannelsAsync(CancellationToken cancellationToken = default)
         => await GetTextAsync("/control/currenttpchannels", cancellationToken).ConfigureAwait(false);
 
-    /// <summary>Fordert die Box auf, die Live-URL neu aufzubauen (ReciProxy).</summary>
-    public override async Task<string?> BuildLiveUrlAsync(CancellationToken cancellationToken = default)
-        => await GetTextAsync("/control/build_live_url", cancellationToken).ConfigureAwait(false);
-
     /// <summary>
     /// Die alte API meldet keine fertige Stream-Adresse; die Adresse wird aus dem
     /// Streaming-Port des Profils gebaut (siehe <see cref="BuildVlcStreamUrl"/>).
@@ -542,9 +538,9 @@ public sealed class LegacyControlApi : BoxApiClient
         return result;
     }
 
-    /// <summary>VLC-Stream-URL fuer einen Sender (ReciProxy/Transcoding).</summary>
-    public override string BuildVlcStreamUrl(string channelId, bool reciProxy)
-        => reciProxy ? $"{StreamBaseUrl}/ReciProxy" : $"{StreamBaseUrl}/id={channelId}";
+    /// <summary>VLC-Stream-URL fuer einen Sender.</summary>
+    public override string BuildVlcStreamUrl(string channelId)
+        => $"{StreamBaseUrl}/id={channelId}";
 
     private static long ParseLong(string value)
         => long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long result) ? result : 0;

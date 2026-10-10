@@ -21,9 +21,7 @@ public sealed class Profile
 
     public string WebUser { get; set; } = "root";
 
-    public string WebPassword { get; set; } = "nii";
-
-    public bool ReciProxy { get; set; }
+    public string WebPassword { get; set; } = "ni";
 
     /// <summary>"Extern" - Verbindung ueber DynDNS statt lokaler IP.</summary>
     public bool External { get; set; }
@@ -36,9 +34,6 @@ public sealed class Profile
 
     /// <summary>"VLC Fenster"/"Multituner".</summary>
     public bool MultiTuner { get; set; }
-
-    /// <summary>ReciProxy-Startverzoegerung (ms), wie im Original mit "000" ergaenzt.</summary>
-    public string ReciProxyDelay { get; set; } = "0";
 
     /// <summary>
     /// Angesprochene Box-Schnittstelle: "Alte API (/control/)" (Standard) oder
@@ -57,7 +52,6 @@ public sealed class Profile
         Profile profile = new() { Name = name };
 
         profile.External = ini.ReadInt("Profildaten", "Extern") == 1;
-        profile.ReciProxy = ini.ReadInt("Profildaten", "ReciProxy") == 1;
         profile.ForceSwitch = ini.ReadInt("Profildaten", "Umschalten erzwingen") == 1;
         profile.FavoritesOnly = ini.ReadInt("Profildaten", "Favoriten") == 1;
         profile.MultiTuner = ini.ReadInt("VLC Fenster", "Multituner") == 1;
@@ -72,7 +66,6 @@ public sealed class Profile
         profile.WebAuthentication = ini.ReadInt("Profildaten", "Web-Authentifikation") == 1;
         profile.WebUser = Default(ini.Read("Profildaten", "Webserver Nutzer"), "root");
         profile.WebPassword = Default(ini.Read("Profildaten", "Webserver Passwort"), "coolstream");
-        profile.ReciProxyDelay = Default(ini.Read("ReciProxy", "Startverzögerung"), "0");
         profile.ApiVersion = BoxApis.Parse(ini.Read("Profildaten", "API-Version"));
 
         return profile;
@@ -102,7 +95,6 @@ public sealed class Profile
         ini.Write("Profildaten", "Web-Authentifikation", WebAuthentication ? "1" : "0");
         ini.Write("Profildaten", "Webserver Nutzer", WebUser);
         ini.Write("Profildaten", "Webserver Passwort", WebPassword);
-        ini.Write("Profildaten", "ReciProxy", ReciProxy ? "1" : "0");
         ini.Write("Profildaten", "Umschalten erzwingen", ForceSwitch ? "1" : "0");
         if (FavoritesOnly)
         {
@@ -114,7 +106,6 @@ public sealed class Profile
         }
 
         ini.Write("VLC Fenster", "Multituner", MultiTuner ? "1" : "0");
-        ini.Write("ReciProxy", "Startverzögerung", ReciProxyDelay);
         ini.Write("Profildaten", "API-Version", BoxApis.ToIniValue(ApiVersion));
     }
 

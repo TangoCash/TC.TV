@@ -691,12 +691,6 @@ public partial class MainWindow : Window
                 // Neue API: die Box nennt die fertige Adresse (Port aus ihren Einstellungen).
                 arguments = _session.VlcOptions.BuildOptionString() + " " + liveUrl;
             }
-            else if (_session.Profile.ReciProxy)
-            {
-                await _session.Client.BuildLiveUrlAsync(_cts.Token);
-                await Task.Delay(ReciProxyDelayMs());
-                arguments = _session.VlcOptions.BuildOptionString() + " " + _session.Client.StreamBaseUrl + "/ReciProxy";
-            }
             else
             {
                 arguments = _session.VlcOptions.BuildOptionString() + " " + _session.Client.StreamBaseUrl + "/id=" + channel.Id;
@@ -711,9 +705,6 @@ public partial class MainWindow : Window
         {
         }
     }
-
-    private int ReciProxyDelayMs()
-        => int.TryParse(_session.Profile.ReciProxyDelay, out int seconds) ? Math.Max(0, seconds) * 1000 : 0;
 
     /// <summary>
     /// Prüft, ob der Stream des gewählten Senders wegen einer laufenden Aufnahme

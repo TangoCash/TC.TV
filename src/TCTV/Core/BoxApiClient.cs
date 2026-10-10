@@ -120,9 +120,6 @@ public abstract class BoxApiClient : IDisposable
     /// </summary>
     public abstract Task<string?> GetCurrentTpChannelsAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Fordert die Box auf, die Live-URL neu aufzubauen (ReciProxy).</summary>
-    public abstract Task<string?> BuildLiveUrlAsync(CancellationToken cancellationToken = default);
-
     /// <summary>Live-Adresse eines Senders laut Box oder null, wenn nicht ermittelbar.</summary>
     public abstract Task<string?> GetStreamUrlAsync(string channelId, CancellationToken cancellationToken = default);
 
@@ -140,7 +137,7 @@ public abstract class BoxApiClient : IDisposable
     public abstract Task<long> GetBoxTimeAsync(CancellationToken cancellationToken = default);
 
     /// <summary>VLC-Stream-Adresse eines Senders.</summary>
-    public abstract string BuildVlcStreamUrl(string channelId, bool reciProxy);
+    public abstract string BuildVlcStreamUrl(string channelId);
 
     public void Dispose()
     {

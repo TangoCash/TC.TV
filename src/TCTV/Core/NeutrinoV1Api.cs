@@ -1217,10 +1217,6 @@ public sealed class NeutrinoV1Api : BoxApiClient
         return document is null ? null : "ok";
     }
 
-    /// <summary>Die neue API baut die Live-Adresse bei jeder Abfrage frisch auf.</summary>
-    public override Task<string?> BuildLiveUrlAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<string?>(null);
-
     /// <summary>Live-Adresse eines Senders, wie die Box sie nennt (GET /api/v1/stream/{id}).</summary>
     public override async Task<string?> GetStreamUrlAsync(string channelId, CancellationToken cancellationToken = default)
     {
@@ -1240,8 +1236,8 @@ public sealed class NeutrinoV1Api : BoxApiClient
         return url.Length == 0 ? null : url;
     }
 
-    /// <summary>ReciProxy kennt das neue Image nicht; es bleibt bei der normalen Adresse.</summary>
-    public override string BuildVlcStreamUrl(string channelId, bool reciProxy)
+    /// <summary>VLC-Stream-Adresse eines Senders.</summary>
+    public override string BuildVlcStreamUrl(string channelId)
         => StreamBaseUrl + "/id=" + channelId;
 
     /// <summary>

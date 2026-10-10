@@ -671,8 +671,15 @@ public partial class MainWindow : Window
 
         try
         {
-            await _session.Client.ZapToAsync(channel.Id, _cts.Token);
-            await Task.Delay(500);
+            // Nur bei "Umschalten erzwingen" die Box wirklich umschalten (zap).
+            // Ohne Zwang streamt die Adresse den Sender direkt (id=<id> bzw.
+            // GET /api/v1/stream/{id}); ein Zap würde den laufenden Sender der Box
+            // ändern, was beim reinen Streamen nicht gewollt ist.
+            if (_session.Profile.ForceSwitch)
+            {
+                await _session.Client.ZapToAsync(channel.Id, _cts.Token);
+                await Task.Delay(500);
+            }
 
             string arguments;
             string? liveUrl = _session.Client.ApiVersion == BoxApi.V1

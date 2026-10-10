@@ -330,7 +330,7 @@ Sonderlogik**, die für die Funktion nicht nötig ist. Nicht portiert wurden:
   neuen API und einem Protokoll aller Anfragen): Anmeldung (`POST /api/v1/login`),
   Sitzungs-Cookie, zweiter Token als `X-CSRF-Token` bei allen ändernden Aufrufen,
   Senderliste in zwei Seiten, EPG-Zuordnung, Medien-Token in der Datei-Adresse,
-  Zap (`{"channel_id":…,"wake":true}`), Timer als Unix-Sekunden – alles aus dem
+  Zap (`{"channel_id":…,"wake":false}`), Timer als Unix-Sekunden – alles aus dem
   echten Client (`RecordingServiceClient`) heraus, inklusive Berechnung der
   aktuellen Transpondersender.
 * Profilfenster **live** geprüft (UI-Automation mit echtem Mausklick auf

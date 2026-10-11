@@ -35,6 +35,9 @@ public partial class SettingsWindow : Window
         SaveButton.Content = Localization.T(302);
         CancelButton.Content = Localization.T(272);
         LabelVlcPath.Text = "VLC Player";
+        UpdateCheckBox.Content = Localization.T(326);
+        UpdateCheckBox.ToolTip = Localization.T(327);
+        CheckUpdatesButton.Content = Localization.T(328);
     }
 
     /// <summary>Reihenfolge der Themen im Auswahlfeld (Dark orange ist Standard).</summary>
@@ -57,6 +60,7 @@ public partial class SettingsWindow : Window
         RecursiveBox.IsChecked = settings.RecursiveVideoDisplay;
         TransponderBox.IsChecked = settings.MarkTransponderChannels;
         FullscreenStreamsBox.IsChecked = settings.VideoMode;
+        UpdateCheckBox.IsChecked = settings.UpdateCheck;
 
         VideoOnTopBox.IsChecked = vlc.VideoOnTop;
         NotificationBox.IsChecked = vlc.SuppressNotification;
@@ -99,6 +103,7 @@ public partial class SettingsWindow : Window
         settings.RecursiveVideoDisplay = RecursiveBox.IsChecked == true;
         settings.MarkTransponderChannels = TransponderBox.IsChecked == true;
         settings.VideoMode = FullscreenStreamsBox.IsChecked == true;
+        settings.UpdateCheck = UpdateCheckBox.IsChecked == true;
 
         vlc.VideoOnTop = VideoOnTopBox.IsChecked == true;
         vlc.SuppressNotification = NotificationBox.IsChecked == true;
@@ -121,6 +126,40 @@ public partial class SettingsWindow : Window
     }
 
     private void OnCancel(object sender, RoutedEventArgs e) => DialogResult = false;
+
+    /// <summary>Prüft manuell auf Updates und zeigt das Ergebnis.</summary>
+    private async void OnCheckUpdates(object sender, RoutedEventArgs e)
+    {
+        CheckUpdatesButton.IsEnabled = false;
+        UpdateInfo? update;
+        try
+        {
+            update = await UpdateChecker.CheckAsync();
+        }
+        catch (Exception)
+        {
+            update = null;
+        }
+        finally
+        {
+            CheckUpdatesButton.IsEnabled = true;
+        }
+
+        if (update is null)
+        {
+            MessageBox.Show(this, Localization.T(234), Localization.T(233), MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (update.IsNewer)
+        {
+            await App.NotifyUpdateAsync(update, this);
+        }
+        else
+        {
+            MessageBox.Show(this, Localization.T(329), Localization.T(324), MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
 
     /// <summary>
     /// Nur für den Selbsttest: Beschriftung und Tooltip der Option

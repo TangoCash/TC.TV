@@ -14,6 +14,7 @@
 #   powershell -File tools\publish-singlefile.ps1                       # eine Datei
 #   powershell -File tools\publish-singlefile.ps1 -Variant Standalone   # ohne .NET
 #   jeweils optional -Architecture x86
+#   optional -Version <x.y.z> setzt die Assembly-Version (im CI aus dem Tag).
 param(
     [ValidateSet('x64', 'x86')]
     [string]$Architecture = 'x64',
@@ -21,7 +22,9 @@ param(
     [ValidateSet('SingleFile', 'Standalone')]
     [string]$Variant = 'SingleFile',
 
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+
+    [string]$Version = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,6 +38,9 @@ Write-Output "Publish $project ($profile, $Variant, $Configuration)"
 
 $profileArgument = '-p:PublishProfile=' + $profile
 $arguments = @($project, '-c', $Configuration, $profileArgument, '--nologo')
+if ($Version) {
+    $arguments += '-p:Version=' + $Version
+}
 
 & dotnet publish @arguments
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish ist fehlgeschlagen (ExitCode $LASTEXITCODE)." }

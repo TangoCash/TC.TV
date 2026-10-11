@@ -8,9 +8,9 @@ namespace TCTV.Generated;
 /// <summary>Sprach-Tabelle des Originalprogramms ($ei). Index = Zeile, 0 = Deutsch, 1 = Englisch.</summary>
 public static class LocalizationTable
 {
-    public const int Count = 324;
+    public const int Count = 332;
 
-    public static readonly string[,] Strings = new string[324, 2]
+    public static readonly string[,] Strings = new string[332, 2]
     {
         { "Einstellungen", "Settings" },
         { "Hilfe", "Help" },
@@ -336,6 +336,14 @@ public static class LocalizationTable
         { "Auch Videos aus Unterordnern werden angezeigt.", "Also videos from subfolders are displayed" },
         { "MainDirs", "MainDirs" },
         { "Nur Hauptverzeichnisse in der Auswahlliste.", "Only main directories in the pick list." },
+        { "Update verfügbar", "Update available" },
+        { "Version {0} ist verfügbar. Installiert ist {1}.", "Version {0} is available. Installed: {1}." },
+        { "Updateprüfung", "Check for updates" },
+        { "Beim Start automatisch nach Updates suchen.", "Automatically check for updates on startup." },
+        { "Jetzt prüfen", "Check now" },
+        { "Keine neuere Version verfügbar.", "No newer version available." },
+        { "Keine passende Variante gefunden.", "No matching variant found." },
+        { "Update heruntergeladen. Jetzt installieren und neu starten?", "Update downloaded. Install and restart now?" },
     };
 }
 

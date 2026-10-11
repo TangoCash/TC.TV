@@ -53,6 +53,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
                             <TextBlock x:Name="LabelLanguage" TextWrapping="Wrap" Grid.Row="0" Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center" />
@@ -91,6 +92,14 @@
                             <CheckBox x:Name="RecursiveBox" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
                             <CheckBox x:Name="TransponderBox" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
                             <CheckBox x:Name="FullscreenStreamsBox" Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,2" />
+                            <Grid Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <CheckBox x:Name="UpdateCheckBox" Grid.Column="0" VerticalAlignment="Center" />
+                                <Button x:Name="CheckUpdatesButton" Grid.Column="1" Style="{StaticResource GhostButton}" Click="OnCheckUpdates" />
+                            </Grid>
                         </Grid>
                     </StackPanel>
                 </Border>

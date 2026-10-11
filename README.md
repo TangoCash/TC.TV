@@ -51,7 +51,7 @@ powershell -File tools/publish-singlefile.ps1 -Variant Standalone -Architecture 
   → die App startet dort und meldet im Selbsttest `Laufzeit: .NET 10.0.8`.
 * Die Standalone-Variante braucht gar keine Laufzeit: in einem leeren Ordner mit
   `DOTNET_ROOT` auf einen leeren Pfad und `DOTNET_MULTILEVEL_LOOKUP=0` gestartet
-  läuft sie (133/133 Prüfungen OK, `Laufzeit: .NET 8.0.27` aus der EXE).
+  läuft sie (153/153 Prüfungen OK, `Laufzeit: .NET 8.0.27` aus der EXE).
   Der erste Start entpackt sich kurz nach `%TEMP%\.net` (Single-File-Standard).
 
 
@@ -229,6 +229,28 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
 * Stoppen beim Zap: Taste `s` an das VLC-Fenster bzw. Prozess beenden
   (`VLC erhalten beim Zap`, `Beenden`).
 
+**Automatische Updateprüfung und -installation** (`UpdateChecker`)
+* Beim Start prüft TC.TV – wenn `Optionen\Updateprüfung` gesetzt ist (Standard) –
+  über die GitHub-API
+  `https://api.github.com/repos/TangoCash/TC.TV/releases/latest`, ob eine neuere
+  Version veröffentlicht wurde. Verglichen wird der Release-Tag (z. B. `v0.4`)
+  mit der eingebauten `Version` (AssemblyVersion). Entwürfe und Vorabversionen
+  werden ignoriert.
+* Ist eine neuere Version verfügbar, lädt TC.TV die **passende EXE-Variante**
+  automatisch herunter: Architektur (x64/x86) und Ausführung (SingleFile vs.
+  Standalone, erkannt an der Dateigröße) wählen den richtigen Anhang, die
+  SHA-256-Prüfsumme von GitHub wird verifiziert. Danach ersetzt ein
+  PowerShell-Helfer die laufende EXE nach dem Beenden und startet die neue
+  Version; „Nein“ lässt die Datei liegen und öffnet den Ordner. Ist keine
+  passende Variante dabei, öffnet sich die Release-Seite.
+* In den Einstellungen liegt die Option **Updateprüfung** (mit Tooltip) und der
+  Knopf **Jetzt prüfen** für eine manuelle Prüfung.
+* **Versionierung:** die `Version` wird im CI automatisch aus dem Tag gesetzt
+  (`dotnet-desktop.yml`: Tag `v0.4` → `-p:Version=0.4`). Lokal ist `Version` im
+  `TCTV.csproj` der Fallback (aktuell `0.3`). Der Selbsttest deckt
+  Versionsvergleich, Tag-Parsing, Release-Auswertung und Varianten-Auswahl mit
+  19 Prüfungen ab.
+
 ### Getestet
 
 * Build ohne Warnungen (`dotnet build TCTV.Net.sln`).
@@ -237,7 +259,7 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
 * VLC-Erkennung über `Program Files (x86)`.
 * `--selftest`: alle fünf Fenster (Main, Settings, Profiles, Video, Prompt)
   werden fehlerfrei aufgebaut (Exit-Code 0).
-* `--selftest`: **133 Prüfungen** mit synthetischen Antworten
+* `--selftest`: **153 Prüfungen** mit synthetischen Antworten
   (Timer-XML ohne/mit Eintrag, `format=id`, ID-Vergleich, Transponder,
   `getdir`/`getmovies`/`file`-Listen, HTTP-Wiedergabe-URL, UTF-8-Umlaute,
   Latin-1-Rückfall, INI-Rundlauf, Fortschrittsberechnung, Themenauswahl,
@@ -292,7 +314,7 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
 
 * `tools/publish-singlefile.ps1` liefert **genau eine Datei** `dist\TC.TV.exe`
   (971.857 Bytes) – die `runtimeconfig.json` ist mit eingebettet.
-* Lauffähig geprüft: `TC.TV.exe --selftest` **aus dem Publish-Ordner** → 133/133 OK,
+* Lauffähig geprüft: `TC.TV.exe --selftest` **aus dem Publish-Ordner** → 153/153 OK,
   Exit-Code 0.
 * **Aufwärtskompatibilität nachgemessen** (Umgebung mit *nur* .NET 10: eigene
   `DOTNET_ROOT`-Wurzel mit `host`- und `shared`-Junctions auf echte 10.0.8-Frameworks):
@@ -300,7 +322,7 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   | Auslieferung | nur .NET 10 vorhanden | kein .NET auffindbar |
   |---|---|---|
   | `TC.TV.exe` (SingleFile, 1 Datei) | **OK – `Laufzeit: .NET 10.0.8`** | – |
-  | `TC.TV.exe` (Standalone, 1 Datei) | OK – `Laufzeit: .NET 8.0.27` | **OK – 133/133 in 2 s** |
+  | `TC.TV.exe` (Standalone, 1 Datei) | OK – `Laufzeit: .NET 8.0.27` | **OK – 153/153 in 2 s** |
 
 * `COREHOST_TRACE=1` belegt, dass der Host `rollForward` **aus dem Bundle** anwendet:
   `'Roll forward' enabled with version_compatibility_range [major]` und
@@ -314,7 +336,7 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
 * Standalone-Variante: `dist\standalone\TC.TV.exe` (72,0 MB) in einen leeren Ordner
   kopiert und mit `DOTNET_ROOT` auf einen **leeren** Ordner plus
   `DOTNET_MULTILEVEL_LOOKUP=0` gestartet – also ohne irgendeine auffindbare
-  .NET-Laufzeit: **ExitCode 0, 133/133 OK in 2 s**. x86: 66,4 MB, ebenfalls eine Datei.
+  .NET-Laufzeit: **ExitCode 0, 153/153 OK in 2 s**. x86: 66,4 MB, ebenfalls eine Datei.
 * EXE-Icon geprüft: `ExtractAssociatedIcon` liefert das Anwendungssymbol
   (TV mit Antenne), Icon-Größen 16–256 px.
 * Datenablage geprüft:

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -82,6 +83,13 @@ public partial class App : Application
         MainWindow window = new();
         MainWindow = window;
         window.Show();
+
+        // Automatische Updateprüfung gegen die GitHub-Releases (abschaltbar
+        // über "Updateprüfung" in den Einstellungen).
+        if (Session.Settings.UpdateCheck)
+        {
+            _ = CheckForUpdatesAsync();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -102,6 +110,193 @@ public partial class App : Application
     public void ExitApplication()
     {
         Shutdown();
+    }
+
+    /// <summary>Prüft im Hintergrund auf Updates und meldet eine neue Version.</summary>
+    private async Task CheckForUpdatesAsync()
+    {
+        UpdateInfo? update;
+        try
+        {
+            update = await UpdateChecker.CheckAsync();
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        if (update is not null && update.IsNewer)
+        {
+            await NotifyUpdateAsync(update, MainWindow);
+        }
+    }
+
+    /// <summary>Zeigt den Update-Hinweis und führt auf Wunsch Download und Installation aus.</summary>
+    public static async Task NotifyUpdateAsync(UpdateInfo update, Window? owner = null)
+    {
+        if (!AskToDownload(update, owner))
+        {
+            return;
+        }
+
+        ReleaseAsset? asset = UpdateChecker.SelectAsset(update);
+        if (asset is null)
+        {
+            Show(owner, TCTV.Core.Localization.T(330), TCTV.Core.Localization.T(324), MessageBoxButton.OK, MessageBoxImage.Warning);
+            OpenReleasePage(update.ReleaseUrl);
+            return;
+        }
+
+        string tempFile = Path.Combine(Path.GetTempPath(), $"TC.TV-{Guid.NewGuid():N}.exe");
+        try
+        {
+            await UpdateChecker.DownloadAsync(asset, tempFile);
+        }
+        catch (Exception)
+        {
+            TryDelete(tempFile);
+            Show(owner, TCTV.Core.Localization.T(234), TCTV.Core.Localization.T(233), MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            if (AskToInstall(owner))
+            {
+                InstallAndRestart(tempFile);
+            }
+            else
+            {
+                OpenFolder(tempFile);
+            }
+        }
+        catch (Exception)
+        {
+            OpenFolder(tempFile);
+        }
+    }
+
+    private static bool AskToDownload(UpdateInfo update, Window? owner)
+    {
+        string message = string.Format(
+            TCTV.Core.Localization.T(325),
+            UpdateChecker.Display(update.Version),
+            UpdateChecker.Display(UpdateChecker.CurrentVersion));
+
+        if (!string.IsNullOrWhiteSpace(update.Changelog))
+        {
+            string changelog = update.Changelog.Trim();
+            if (changelog.Length > 600)
+            {
+                changelog = changelog[..600] + "…";
+            }
+
+            message += Environment.NewLine + Environment.NewLine + changelog;
+        }
+
+        message += Environment.NewLine + Environment.NewLine + TCTV.Core.Localization.T(232);
+        return Show(owner, message, TCTV.Core.Localization.T(324), MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes;
+    }
+
+    private static bool AskToInstall(Window? owner)
+        => Show(owner, TCTV.Core.Localization.T(331), TCTV.Core.Localization.T(324), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+    private static MessageBoxResult Show(Window? owner, string message, string title, MessageBoxButton buttons, MessageBoxImage icon)
+        => owner is null
+            ? MessageBox.Show(message, title, buttons, icon)
+            : MessageBox.Show(owner, message, title, buttons, icon);
+
+    /// <summary>Ersetzt die laufende EXE nach dem Beenden und startet die neue Version.</summary>
+    private static void InstallAndRestart(string downloadedFile)
+    {
+        string target = Environment.ProcessPath ?? string.Empty;
+        if (target.Length == 0)
+        {
+            OpenFolder(downloadedFile);
+            return;
+        }
+
+        string script = Path.Combine(Path.GetTempPath(), $"tctv-update-{Guid.NewGuid():N}.ps1");
+        File.WriteAllText(script, BuildUpdateScript());
+
+        Process.Start(new ProcessStartInfo("powershell.exe")
+        {
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{script}\" -ProcessId {Environment.ProcessId} -NewExe \"{downloadedFile}\" -TargetExe \"{target}\"",
+            UseShellExecute = true,
+        });
+
+        if (Application.Current is App app)
+        {
+            app.ExitApplication();
+        }
+    }
+
+    /// <summary>PowerShell-Helfer: wartet auf das Ende der App, ersetzt die EXE und startet neu.</summary>
+    private static string BuildUpdateScript() =>
+        @"param([int]$ProcessId, [string]$NewExe, [string]$TargetExe)
+$ErrorActionPreference = 'SilentlyContinue'
+while (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue) {
+    Start-Sleep -Milliseconds 500
+}
+Start-Sleep -Milliseconds 500
+$installed = $false
+for ($i = 0; $i -lt 20; $i++) {
+    try {
+        Copy-Item -LiteralPath $NewExe -Destination $TargetExe -Force -ErrorAction Stop
+        $installed = $true
+        break
+    }
+    catch {
+        Start-Sleep -Milliseconds 500
+    }
+}
+if ($installed) {
+    Remove-Item -LiteralPath $NewExe -Force -ErrorAction SilentlyContinue
+    Start-Process -FilePath $TargetExe
+}
+else {
+    Start-Process explorer.exe -ArgumentList (Split-Path -Parent $NewExe)
+}";
+
+    private static void OpenFolder(string filePath)
+    {
+        string? folder = Path.GetDirectoryName(filePath);
+        if (string.IsNullOrEmpty(folder))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    /// <summary>Öffnet die Release-Seite im Standardbrowser.</summary>
+    public static void OpenReleasePage(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+            // Browser konnte nicht geöffnet werden – bewusst still.
+        }
     }
 
     private static bool HasSelfTestArgument(string[] args)
@@ -159,6 +354,7 @@ public partial class App : Application
         Check("PromptWindow", () => PromptWindow.CreateForSelfTest());
 
         RunApiChecks(report);
+        RunUpdateChecks(report);
 
         File.WriteAllLines(Path.Combine(AppPaths.WorkDir, "selftest.log"), report);
         Shutdown(report.Exists(line => line.StartsWith("FEHLER", StringComparison.Ordinal)) ? 1 : 0);
@@ -734,6 +930,82 @@ public partial class App : Application
         Expect("neue API: Zap weckt die Box nicht (wake:false)",
             NeutrinoV1Api.BuildZapBody("361d03f300012b66") == "{\"channel_id\":\"361d03f300012b66\",\"wake\":false}",
             NeutrinoV1Api.BuildZapBody("361d03f300012b66"));
+    }
+
+    /// <summary>Prüft Versionsvergleich und Release-Auswertung der Updateprüfung.</summary>
+    private static void RunUpdateChecks(List<string> report)
+    {
+        void Expect(string name, bool condition, string detail = "")
+            => report.Add((condition ? "OK     " : "FEHLER ") + name + (condition || detail.Length == 0 ? string.Empty : " (" + detail + ")"));
+
+        Expect("Update: Tag \"v0.3\" wird gelesen", UpdateChecker.ParseTag("v0.3") == new Version(0, 3, 0, 0));
+        Expect("Update: Tag \"v1.2.3\" wird gelesen", UpdateChecker.ParseTag("v1.2.3") == new Version(1, 2, 3, 0));
+        Expect("Update: Tag \"1.0\" ohne v wird gelesen", UpdateChecker.ParseTag("1.0") == new Version(1, 0, 0, 0));
+        Expect("Update: vierstelliger Tag \"v0.3.1.7\"", UpdateChecker.ParseTag("v0.3.1.7") == new Version(0, 3, 1, 7));
+        Expect("Update: ungültige oder leere Tags ergeben 0.0.0.0",
+            UpdateChecker.ParseTag("") == new Version(0, 0, 0, 0)
+            && UpdateChecker.ParseTag("v") == new Version(0, 0, 0, 0)
+            && UpdateChecker.ParseTag("kein-versions-string") == new Version(0, 0, 0, 0));
+        Expect("Update: Anzeige kürzt überflüssige Nullen",
+            UpdateChecker.Display(new Version(0, 4, 0, 0)) == "0.4"
+            && UpdateChecker.Display(new Version(1, 2, 3, 0)) == "1.2.3");
+
+        const string releaseJson = """
+            {"tag_name":"v0.4","html_url":"https://github.com/TangoCash/TC.TV/releases/tag/v0.4","body":"Neu","draft":false,"prerelease":false}
+            """;
+
+        UpdateInfo? newer = UpdateChecker.ParseRelease(releaseJson, new Version(0, 3, 0, 0));
+        Expect("Update: neueres Release wird erkannt",
+            newer is not null && newer.IsNewer && newer.Version == new Version(0, 4, 0, 0));
+
+        UpdateInfo? same = UpdateChecker.ParseRelease(releaseJson, new Version(0, 4, 0, 0));
+        Expect("Update: gleiche Version ist kein Update", same is not null && !same.IsNewer);
+
+        UpdateInfo? older = UpdateChecker.ParseRelease(releaseJson, new Version(0, 5, 0, 0));
+        Expect("Update: ältere Installation wird nicht zurückgestuft", older is not null && !older.IsNewer);
+
+        const string prereleaseJson = """
+            {"tag_name":"v0.5","html_url":"https://github.com/TangoCash/TC.TV/releases/tag/v0.5","prerelease":true,"draft":false}
+            """;
+        Expect("Update: Vorabversionen werden ignoriert",
+            UpdateChecker.ParseRelease(prereleaseJson, new Version(0, 3, 0, 0)) is null);
+
+        const string draftJson = """
+            {"tag_name":"v0.5","html_url":"https://github.com/TangoCash/TC.TV/releases/tag/v0.5","prerelease":false,"draft":true}
+            """;
+        Expect("Update: Entwürfe werden ignoriert",
+            UpdateChecker.ParseRelease(draftJson, new Version(0, 3, 0, 0)) is null);
+
+        Expect("Update: kaputtes JSON ergibt null",
+            UpdateChecker.ParseRelease("kein json", new Version(0, 3, 0, 0)) is null);
+
+        const string assetsJson = """
+            {"tag_name":"v0.4","html_url":"https://github.com/TangoCash/TC.TV/releases/tag/v0.4","draft":false,"prerelease":false,
+             "assets":[
+               {"name":"TC.TV-win-x64.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x64.exe","size":942161,"digest":"sha256:aaaa"},
+               {"name":"TC.TV-win-x86.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x86.exe","size":943697,"digest":"sha256:bbbb"},
+               {"name":"TC.TV-win-x64-standalone.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x64-standalone.exe","size":71985085,"digest":"sha256:cccc"},
+               {"name":"TC.TV-win-x86-standalone.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x86-standalone.exe","size":66396420,"digest":"sha256:dddd"}
+             ]}
+            """;
+
+        UpdateInfo? withAssets = UpdateChecker.ParseRelease(assetsJson, new Version(0, 3, 0, 0));
+        Expect("Update: Anhänge werden gelesen",
+            withAssets is not null && withAssets.Assets.Count == 4, withAssets?.Assets.Count.ToString() ?? "null");
+
+        string? firstSha = withAssets is not null && withAssets.Assets.Count > 0 ? withAssets.Assets[0].Sha256 : null;
+        Expect("Update: Prüfsumme ohne sha256:-Präfix", firstSha == "aaaa", firstSha ?? "null");
+
+        Expect("Update: x64 SingleFile wird gewählt",
+            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x64", false)?.Name == "TC.TV-win-x64.exe");
+        Expect("Update: x86 SingleFile wird gewählt",
+            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x86", false)?.Name == "TC.TV-win-x86.exe");
+        Expect("Update: x64 Standalone wird gewählt",
+            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x64", true)?.Name == "TC.TV-win-x64-standalone.exe");
+        Expect("Update: x86 Standalone wird gewählt",
+            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x86", true)?.Name == "TC.TV-win-x86-standalone.exe");
+        Expect("Update: unbekannte Architektur ergibt null",
+            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "arm64", false) is null);
     }
 
     /// <summary>

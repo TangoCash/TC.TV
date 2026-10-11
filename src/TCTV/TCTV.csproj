@@ -17,7 +17,9 @@
     <AssemblyName>TC.TV</AssemblyName>
     <!-- Original-Icon des AutoIt-Programms (aus den eingebetteten Ressourcen). -->
     <ApplicationIcon>Assets\sTV.ico</ApplicationIcon>
-    <Version>1.0</Version>
+    <!-- Lokale Standardversion; im CI wird sie automatisch aus dem Tag gesetzt
+         (dotnet-desktop.yml: -p:Version=...). Die Updateprüfung vergleicht diese
+         Nummer mit dem Tag des neuesten GitHub-Release. --><Version>0.3</Version>
     <Product>TC.TV</Product>
     <Company>TC.TV</Company>
     <AssemblyTitle>TC.TV</AssemblyTitle>

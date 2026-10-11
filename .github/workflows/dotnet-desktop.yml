@@ -43,11 +43,18 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    - name: Set version from tag
+      run: |
+        $version = "$env:GITHUB_REF_NAME" -replace '^v', ''
+        if ([string]::IsNullOrWhiteSpace($version)) { throw "Kein gültiger Tag (GITHUB_REF_NAME=$env:GITHUB_REF_NAME)" }
+        "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+        Write-Output "Version = $version"
+
     - name: Restore
       run: dotnet restore $env:Solution_Name
 
     - name: Build
-      run: dotnet build $env:Solution_Name --configuration $env:Configuration --no-restore
+      run: dotnet build $env:Solution_Name --configuration $env:Configuration --no-restore -p:Version=$env:VERSION
 
     # Der Selbsttest baut alle Fenster unsichtbar auf, führt alle eingebauten
     # Prüfungen aus und beendet sich mit Exit-Code 0 (ok) bzw. 1 (ein FEHLER).
@@ -82,16 +89,16 @@ jobs:
     # Alle vier Auslieferungen wie lokal (tools\publish-singlefile.ps1).
     # Das Skript bricht bei Fehlern ab und prüft, dass genau eine Datei entsteht.
     - name: Publish SingleFile x64
-      run: ./tools/publish-singlefile.ps1 -Variant SingleFile -Architecture x64
+      run: ./tools/publish-singlefile.ps1 -Variant SingleFile -Architecture x64 -Version $env:VERSION
 
     - name: Publish SingleFile x86
-      run: ./tools/publish-singlefile.ps1 -Variant SingleFile -Architecture x86
+      run: ./tools/publish-singlefile.ps1 -Variant SingleFile -Architecture x86 -Version $env:VERSION
 
     - name: Publish Standalone x64
-      run: ./tools/publish-singlefile.ps1 -Variant Standalone -Architecture x64
+      run: ./tools/publish-singlefile.ps1 -Variant Standalone -Architecture x64 -Version $env:VERSION
 
     - name: Publish Standalone x86
-      run: ./tools/publish-singlefile.ps1 -Variant Standalone -Architecture x86
+      run: ./tools/publish-singlefile.ps1 -Variant Standalone -Architecture x86 -Version $env:VERSION
 
     # Alle vier Auslieferungen heissen TC.TV.exe (nur in anderen Ordnern).
     # Für das Release werden sie mit eindeutigen Namen in "release/" abgelegt,

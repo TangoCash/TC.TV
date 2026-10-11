@@ -351,6 +351,7 @@ else {
         Check("SettingsWindow", () => new SettingsWindow());
         Check("ProfilesWindow", () => new ProfilesWindow());
         Check("VideoWindow", () => new VideoWindow());
+        Check("EpgWindow", () => EpgWindow.CreateForSelfTest());
         Check("PromptWindow", () => PromptWindow.CreateForSelfTest());
 
         RunApiChecks(report);
@@ -1079,6 +1080,7 @@ else {
         Render(directory, "SettingsWindow", () => new SettingsWindow(), 540, 0);
         Render(directory, "ProfilesWindow", () => new ProfilesWindow(), 720, 580);
         Render(directory, "VideoWindow", () => new VideoWindow(), 660, 540);
+        Render(directory, "EpgWindow", () => EpgWindow.CreateForSelfTest(), 560, 500);
         Render(directory, "PromptWindow", () => PromptWindow.CreateForSelfTest(), 360, 0);
         Render(directory, "ProgressCheck", CreateProgressCheckWindow, 250, 70);
 

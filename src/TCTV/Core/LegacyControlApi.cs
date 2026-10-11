@@ -130,6 +130,33 @@ public sealed class LegacyControlApi : BoxApiClient
         return xml is null ? new List<Channel>() : ParseBouquet(xml);
     }
 
+    /// <summary>
+    /// EPG eines einzelnen Senders. Die alte API kennt je Sender nur
+    /// &lt;firstEPG&gt;/&lt;secondEPG&gt; – mehr liefert sie nicht.
+    /// </summary>
+    public override async Task<List<EpgEvent>> GetChannelEpgAsync(string channelId, string bouquetNumber, CancellationToken cancellationToken = default)
+    {
+        List<Channel> channels = await GetBouquetAsync(bouquetNumber, cancellationToken).ConfigureAwait(false);
+        Channel? match = channels.Find(c => RecordingServiceClient.ChannelIdsMatch(c.Id, channelId));
+        if (match is null)
+        {
+            return new List<EpgEvent>();
+        }
+
+        List<EpgEvent> result = new();
+        if (!match.FirstEpg.IsEmpty)
+        {
+            result.Add(match.FirstEpg);
+        }
+
+        if (!match.SecondEpg.IsEmpty)
+        {
+            result.Add(match.SecondEpg);
+        }
+
+        return result;
+    }
+
     /// <summary>Parst die &lt;channel&gt;-Eintraege aus getbouquet?format=xml.</summary>
     public static List<Channel> ParseBouquet(string xml)
     {

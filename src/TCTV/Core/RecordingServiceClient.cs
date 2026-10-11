@@ -65,6 +65,10 @@ public sealed class RecordingServiceClient : IDisposable
     public Task<List<Channel>> GetBouquetAsync(string bouquetNumber, CancellationToken cancellationToken = default)
         => _api.GetBouquetAsync(bouquetNumber, cancellationToken);
 
+    /// <summary>EPG-Sendungen eines einzelnen Senders (für "weiteres EPG").</summary>
+    public Task<List<EpgEvent>> GetChannelEpgAsync(string channelId, string bouquetNumber, CancellationToken cancellationToken = default)
+        => _api.GetChannelEpgAsync(channelId, bouquetNumber, cancellationToken);
+
     public Task<List<string>> GetVideoRootsAsync(string dirToken, CancellationToken cancellationToken = default)
         => _api.GetVideoRootsAsync(dirToken, cancellationToken);
 

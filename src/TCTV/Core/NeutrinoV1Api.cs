@@ -385,10 +385,31 @@ public sealed class NeutrinoV1Api : BoxApiClient
         }
 
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        Dictionary<string, List<EpgEvent>> guide = await GetEpgGridAsync(bouquetNumber, now, cancellationToken)
+        Dictionary<string, List<EpgEvent>> guide = await GetEpgGridAsync(
+                bouquetNumber, now - (3 * 3600), now + (12 * 3600), cancellationToken)
             .ConfigureAwait(false);
         ApplyEpg(channels, guide, now);
         return channels;
+    }
+
+    /// <summary>
+    /// EPG eines einzelnen Senders (für "weiteres EPG"): holt den EPG-Raster mit
+    /// einem größeren Zeitfenster und liefert nur die Sendungen dieses Senders.
+    /// </summary>
+    public override async Task<List<EpgEvent>> GetChannelEpgAsync(string channelId, string bouquetNumber, CancellationToken cancellationToken = default)
+    {
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        Dictionary<string, List<EpgEvent>> guide = await GetEpgGridAsync(
+                bouquetNumber, now - (3 * 3600), now + (72 * 3600), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!guide.TryGetValue(NormalizeChannelId(channelId), out List<EpgEvent>? events) || events.Count == 0)
+        {
+            return new List<EpgEvent>();
+        }
+
+        events.Sort((left, right) => left.StartUnix.CompareTo(right.StartUnix));
+        return events;
     }
 
     /// <summary>Sender eines Bouquets; blättert über <c>next_cursor</c>.</summary>
@@ -491,15 +512,14 @@ public sealed class NeutrinoV1Api : BoxApiClient
     }
 
     /// <summary>
-    /// Sendungen eines Bouquets (GET /api/v1/epg/grid). Das Fenster reicht von drei
-    /// Stunden zurück bis zwölf Stunden voraus, damit die laufende und die folgende
-    /// Sendung sicher enthalten sind.
+    /// Sendungen eines Bouquets (GET /api/v1/epg/grid) im Zeitfenster
+    /// <paramref name="from"/> bis <paramref name="to"/>.
     /// </summary>
-    private async Task<Dictionary<string, List<EpgEvent>>> GetEpgGridAsync(string bouquetNumber, long now, CancellationToken cancellationToken)
+    private async Task<Dictionary<string, List<EpgEvent>>> GetEpgGridAsync(
+        string bouquetNumber, long from, long to, CancellationToken cancellationToken)
     {
         Dictionary<string, List<EpgEvent>> result = new(StringComparer.OrdinalIgnoreCase);
-        long from = now - (3 * 3600);
-        long to = now + (12 * 3600);
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         string baseQuery = "?bouquet=" + Uri.EscapeDataString(bouquetNumber)
             + "&from=" + from.ToString(CultureInfo.InvariantCulture)
             + "&to=" + to.ToString(CultureInfo.InvariantCulture)

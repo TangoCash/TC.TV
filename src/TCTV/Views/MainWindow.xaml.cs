@@ -278,6 +278,8 @@ public partial class MainWindow : Window
         FullScreenButton.ToolTip = Localization.T(6);
         ExitButton.Content = "\uE8BB";
         ExitButton.ToolTip = Localization.T(305);
+        StreamMenuItem.Header = Localization.T(334);
+        MoreEpgMenuItem.Header = Localization.T(333);
 
         if (ChannelList.ItemsSource is IEnumerable<ChannelItem> items)
         {
@@ -653,6 +655,36 @@ public partial class MainWindow : Window
     }
 
     private void OnChannelDoubleClick(object sender, MouseButtonEventArgs e) => _ = StreamSelectedAsync();
+
+    /// <summary>Wählt beim Rechtsklick den Sender unter dem Cursor aus (für das Kontextmenü).</summary>
+    private void OnChannelRightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (ItemsControl.ContainerFromElement(ChannelList, e.OriginalSource as DependencyObject) is ListBoxItem item)
+        {
+            item.IsSelected = true;
+        }
+    }
+
+    /// <summary>Zeigt das erweiterte EPG des markierten Senders (Rechtsklick → „Weiteres EPG“).</summary>
+    private async void OnMoreEpg(object sender, RoutedEventArgs e)
+    {
+        Channel? channel = _selected;
+        string? bouquet = (BouquetCombo.SelectedItem as Bouquet)?.Number;
+        if (channel is null || string.IsNullOrEmpty(channel.Id) || string.IsNullOrEmpty(bouquet))
+        {
+            return;
+        }
+
+        try
+        {
+            List<EpgEvent> events = await _session.Client.GetChannelEpgAsync(channel.Id, bouquet, _cts.Token);
+            EpgWindow window = new(channel.Name, events) { Owner = this };
+            window.ShowDialog();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
 
     private async void OnStream(object sender, RoutedEventArgs e) => await StreamSelectedAsync();
 

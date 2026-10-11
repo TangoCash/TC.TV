@@ -78,7 +78,14 @@
                              Style="{StaticResource ModernList}"
                              ItemContainerStyle="{StaticResource ModernListItem}"
                              SelectionChanged="OnChannelChanged"
-                             MouseDoubleClick="OnChannelDoubleClick">
+                             MouseDoubleClick="OnChannelDoubleClick"
+                             PreviewMouseRightButtonDown="OnChannelRightClick">
+                        <ListBox.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem x:Name="StreamMenuItem" Click="OnStream" />
+                                <MenuItem x:Name="MoreEpgMenuItem" Click="OnMoreEpg" />
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid>

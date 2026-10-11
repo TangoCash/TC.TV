@@ -422,7 +422,7 @@ public partial class MainWindow : Window
             {
                 try
                 {
-                    await AutoRefreshAsync();
+                    await RefreshCurrentBouquetAsync();
                 }
                 finally
                 {
@@ -549,12 +549,13 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Die Aktualisierung, die „EPG-Auto-Aktualisierung“ beim Einblenden auslöst.
-    /// Wie im Original (<c>_1af($ge[$i6][0])</c> + <c>_1ag()</c>) wird nur das
-    /// **aktuelle** Bouquet neu geholt, nicht die ganze Bouquetliste – die Auswahl
-    /// des Benutzers bleibt dadurch stehen.
+    /// Aktualisiert Sender und EPG des **aktuellen** Bouquets, ohne die Auswahl zu
+    /// verwerfen. Wird von der „EPG-Auto-Aktualisierung“ (beim Einblenden) und vom
+    /// Knopf „EPG aktualisieren“ verwendet. Wie im Original
+    /// (<c>_1af($ge[$i6][0])</c> + <c>_1ag()</c>) wird nur das aktuelle Bouquet
+    /// neu geholt, nicht die ganze Bouquetliste.
     /// </summary>
-    private async Task AutoRefreshAsync()
+    private async Task RefreshCurrentBouquetAsync()
     {
         if (BouquetCombo.SelectedItem is Bouquet bouquet && bouquet.Number.Length > 0)
         {
@@ -748,7 +749,7 @@ public partial class MainWindow : Window
         SetStatus(Localization.T(4));
     }
 
-    private void OnRefreshEpg(object sender, RoutedEventArgs e) => _ = ReloadAsync();
+    private void OnRefreshEpg(object sender, RoutedEventArgs e) => _ = RefreshCurrentBouquetAsync();
 
     private async void OnTimer(object sender, RoutedEventArgs e)
     {

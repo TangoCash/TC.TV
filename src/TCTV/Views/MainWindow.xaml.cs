@@ -146,6 +146,20 @@ public partial class MainWindow : Window
         => enabled && (lastLoadUtc == DateTimeOffset.MinValue || now - lastLoadUtc >= AutoRefreshInterval);
 
     /// <summary>
+    /// true, wenn der Mauszeiger außerhalb des Fensters liegt (mit 40-px-Rand) und
+    /// das Fenster deshalb ausgeblendet werden soll. Berücksichtigt, ob das Fenster
+    /// am rechten oder linken Bildschirmrand hängt.
+    /// </summary>
+    internal static bool ShouldHide(Point mouse, Rect area, double width, bool rightEdge)
+    {
+        double windowLeft = rightEdge ? area.Right - width : area.Left;
+        return mouse.X < windowLeft - 40
+            || mouse.X > windowLeft + width + 40
+            || mouse.Y < area.Top - 40
+            || mouse.Y > area.Bottom + 40;
+    }
+
+    /// <summary>
     /// Die Statuszeile im Kopf: der Meldungstext plus der Name des aktiven Profils,
     /// damit auf den ersten Blick klar ist, mit welcher Box man verbunden ist.
     /// Das Original zeigte dort nur „Verbunden!“ bzw. „Nicht verbunden!“
@@ -378,7 +392,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (IsVisible && (mouse.X < area.Right - Width - 40 || mouse.X > area.Right + 40 || mouse.Y < area.Top - 40 || mouse.Y > area.Bottom + 40))
+        if (IsVisible && ShouldHide(mouse, area, Width, _session.Settings.RightEdge))
         {
             HideWindow();
         }

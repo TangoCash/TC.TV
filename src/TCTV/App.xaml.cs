@@ -707,6 +707,19 @@ else {
         Expect("EPG-Auto-Aktualisierung: Abstand ist 60 s",
             interval == TimeSpan.FromSeconds(60), interval.ToString());
 
+        // --- Fade-in/out: Ausblenden anhand der Mausposition (rechter/linker Rand) ---
+        Rect fadeArea = new(0, 0, 1920, 1080);
+        Expect("Fade: rechter Rand – Maus über dem Fenster bleibt sichtbar",
+            !TCTV.Views.MainWindow.ShouldHide(new Point(1600, 540), fadeArea, 480, rightEdge: true));
+        Expect("Fade: rechter Rand – Maus links vom Fenster blendet aus",
+            TCTV.Views.MainWindow.ShouldHide(new Point(1300, 540), fadeArea, 480, rightEdge: true));
+        Expect("Fade: linker Rand – Maus über dem Fenster bleibt sichtbar",
+            !TCTV.Views.MainWindow.ShouldHide(new Point(240, 540), fadeArea, 480, rightEdge: false));
+        Expect("Fade: linker Rand – Maus rechts vom Fenster blendet aus",
+            TCTV.Views.MainWindow.ShouldHide(new Point(600, 540), fadeArea, 480, rightEdge: false));
+        Expect("Fade: außerhalb in der Höhe blendet aus",
+            TCTV.Views.MainWindow.ShouldHide(new Point(1600, 1200), fadeArea, 480, rightEdge: true));
+
         try
         {
             SettingsWindow settingsWindow = new();

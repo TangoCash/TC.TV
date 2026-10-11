@@ -285,10 +285,10 @@ public partial class MainWindow : Window
     {
         SetButton(StreamButton, "\uE768", Localization.T(207));
         SetButton(StopButton, "\uE71A", Localization.T(4));
-        SetButton(VideoButton, "\uE714", Localization.T(30));
+        SetButton(VideoButton, "\uE714", Localization.T(336));
         SetButton(GuideButton, "\uE7F4", Localization.T(335));
         SetButton(RefreshButton, "\uE72C", Localization.T(304));
-        SetButton(TimersButton, "\uE823", Localization.T(336));
+        SetButton(TimersButton, "\uE823", Localization.T(337));
         SetButton(SettingsButton, "\uE713", Localization.T(0));
         SetButton(ProfilesButton, "\uE716", Localization.T(93));
 

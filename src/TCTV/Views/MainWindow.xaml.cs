@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,9 +19,25 @@ public sealed class ChannelItem
     public ChannelItem(Channel channel)
     {
         Channel = channel;
+
+        string logoPath = App.Session.GetLogoPath(channel);
+        if (logoPath.Length > 0 && File.Exists(logoPath))
+        {
+            LogoPath = logoPath;
+            HasLogo = true;
+        }
     }
 
     public Channel Channel { get; }
+
+    /// <summary>Lokaler Pfad des Senderlogos (leer, wenn keines vorliegt).</summary>
+    public string LogoPath { get; } = string.Empty;
+
+    /// <summary>true, wenn ein Senderlogo vorliegt.</summary>
+    public bool HasLogo { get; }
+
+    /// <summary>true, wenn statt des Logos die Sendernummer angezeigt wird.</summary>
+    public bool ShowNumber => !HasLogo;
 
     public string Number => Channel.Number;
 
@@ -269,8 +286,9 @@ public partial class MainWindow : Window
         SetButton(StreamButton, "\uE768", Localization.T(207));
         SetButton(StopButton, "\uE71A", Localization.T(4));
         SetButton(VideoButton, "\uE714", Localization.T(30));
+        SetButton(GuideButton, "\uE7F4", Localization.T(335));
         SetButton(RefreshButton, "\uE72C", Localization.T(304));
-        SetButton(TimerButton, "\uE823", Localization.T(9));
+        SetButton(TimersButton, "\uE823", Localization.T(336));
         SetButton(SettingsButton, "\uE713", Localization.T(0));
         SetButton(ProfilesButton, "\uE716", Localization.T(93));
 
@@ -542,6 +560,7 @@ public partial class MainWindow : Window
 
         List<ChannelItem> items = channels.Select(c => new ChannelItem(c)).ToList();
         ChannelList.ItemsSource = items;
+        _ = RefreshLogosAsync(channels);
 
         if (items.Count > 0)
         {
@@ -562,6 +581,68 @@ public partial class MainWindow : Window
 
         // Frische Daten holen heißt: die Auto-Aktualisierung wartet wieder 60 s.
         _lastLoadUtc = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>Lädt fehlende Senderlogos im Hintergrund und aktualisiert danach die Liste.</summary>
+    private async Task RefreshLogosAsync(List<Channel> channels)
+    {
+        bool downloaded = false;
+        try
+        {
+            foreach (Channel channel in channels)
+            {
+                string local = _session.GetLogoPath(channel);
+                if (local.Length == 0 || File.Exists(local))
+                {
+                    continue;
+                }
+
+                string? url = _session.Client.BuildLogoUrl(channel);
+                if (string.IsNullOrEmpty(url))
+                {
+                    continue;
+                }
+
+                if (await TryDownloadLogoAsync(url, local))
+                {
+                    downloaded = true;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        if (downloaded)
+        {
+            // Liste neu aufbauen, damit die Logos erscheinen; Auswahl beibehalten.
+            string? selectedId = (ChannelList.SelectedItem as ChannelItem)?.Channel.Id;
+            List<ChannelItem> items = channels.Select(c => new ChannelItem(c)).ToList();
+            ChannelList.ItemsSource = items;
+            int index = selectedId is null ? -1 : items.FindIndex(i => i.Channel.Id == selectedId);
+            ChannelList.SelectedIndex = index >= 0 ? index : 0;
+        }
+    }
+
+    private async Task<bool> TryDownloadLogoAsync(string url, string localPath)
+    {
+        using HttpClient client = new() { Timeout = TimeSpan.FromSeconds(5) };
+        try
+        {
+            byte[] bytes = await client.GetByteArrayAsync(url, _cts.Token);
+            // Nur echte PNG-Dateien übernehmen (sonst zeigt das Bild nichts an).
+            if (bytes.Length > 4 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+            {
+                File.WriteAllBytes(localPath, bytes);
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -678,7 +759,7 @@ public partial class MainWindow : Window
         try
         {
             List<EpgEvent> events = await _session.Client.GetChannelEpgAsync(channel.Id, bouquet, _cts.Token);
-            EpgWindow window = new(channel.Name, events) { Owner = this };
+            EpgWindow window = new(channel.Id, channel.Name, events) { Owner = this };
             window.ShowDialog();
         }
         catch (OperationCanceledException)
@@ -797,39 +878,15 @@ public partial class MainWindow : Window
 
     private void OnRefreshEpg(object sender, RoutedEventArgs e) => _ = RefreshCurrentBouquetAsync();
 
-    private async void OnTimer(object sender, RoutedEventArgs e)
-    {
-        if (_selected is null || string.IsNullOrEmpty(_selected.Id))
-        {
-            return;
-        }
-
-        string? minutes = PromptWindow.Ask(this, Localization.T(9), Localization.T(29), "60");
-        if (minutes is null || !int.TryParse(minutes, out int value) || value <= 0)
-        {
-            return;
-        }
-
-        try
-        {
-            DateTime start = DateTime.Now;
-            await _session.Client.CreateTimerAsync(
-                start.ToString("yyyy-MM-ddTHH:mm:ss"),
-                start.AddMinutes(value).ToString("yyyy-MM-ddTHH:mm:ss"),
-                _selected.Id,
-                "0",
-                _cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
     private void OnVideo(object sender, RoutedEventArgs e) => OpenVideoWindow();
 
     private void OnSettings(object sender, RoutedEventArgs e) => OpenSettings();
 
     private void OnProfiles(object sender, RoutedEventArgs e) => OpenProfiles();
+
+    private void OnGuide(object sender, RoutedEventArgs e) => OpenGuide();
+
+    private void OnTimers(object sender, RoutedEventArgs e) => OpenTimers();
 
     private void OnToggleFullScreen(object sender, RoutedEventArgs e) => ToggleFullScreen();
 
@@ -871,6 +928,19 @@ public partial class MainWindow : Window
             _session.ReloadProfile();
             _ = ReloadAsync();
         }
+    }
+
+    private void OpenGuide()
+    {
+        string bouquet = (BouquetCombo.SelectedItem as Bouquet)?.Number ?? string.Empty;
+        EpgGuideWindow window = new(bouquet) { Owner = this };
+        window.ShowDialog();
+    }
+
+    private void OpenTimers()
+    {
+        TimersWindow window = new() { Owner = this };
+        window.ShowDialog();
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

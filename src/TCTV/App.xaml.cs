@@ -352,6 +352,8 @@ else {
         Check("ProfilesWindow", () => new ProfilesWindow());
         Check("VideoWindow", () => new VideoWindow());
         Check("EpgWindow", () => EpgWindow.CreateForSelfTest());
+        Check("TimersWindow", () => TimersWindow.CreateForSelfTest());
+        Check("EpgGuideWindow", () => EpgGuideWindow.CreateForSelfTest());
         Check("PromptWindow", () => PromptWindow.CreateForSelfTest());
 
         RunApiChecks(report);
@@ -733,6 +735,38 @@ else {
         Expect("Video: gleicher Name (Groß/Klein) gilt als gleich",
             VideoEntry.Compare(dirA, new VideoEntry(new FileEntry { Name = "AAA", IsDirectory = true })) == 0);
 
+        // --- Senderlogos: Adresse ableiten ---
+        Profile legacyLogoProfile = new() { Host = "192.168.178.222", WebPort = "80" };
+        using (RecordingServiceClient legacyLogoClient = new(legacyLogoProfile))
+        {
+            Expect("Logo: alte API – Pfad aus dem Logo-Feld",
+                legacyLogoClient.BuildLogoUrl(new Channel { Id = "abc", Logo = "/logos/x.png" }) == "http://192.168.178.222:80/logos/x.png");
+            Expect("Logo: alte API – ohne Logo-Feld null",
+                legacyLogoClient.BuildLogoUrl(new Channel { Id = "abc" }) is null);
+        }
+
+        Profile v1LogoProfile = new() { Host = "192.168.178.222", WebPort = "80", ApiVersion = BoxApi.V1 };
+        using (RecordingServiceClient v1LogoClient = new(v1LogoProfile))
+        {
+            Expect("Logo: neue API – Logo-Endpunkt",
+                v1LogoClient.BuildLogoUrl(new Channel { Id = "bb88043700016d66" }) == "http://192.168.178.222:80/api/v1/channels/bb88043700016d66/logo");
+            Expect("Logo: ohne Sender-ID null",
+                v1LogoClient.BuildLogoUrl(new Channel()) is null);
+        }
+
+        // --- EPG-Zeit für Aufnahme-Timer (Start/Ende laut EPG) ---
+        EpgEvent unixEvent = new() { StartUnix = 1704136500, DurationSeconds = 2700 };
+        DateTime? unixStart = unixEvent.StartDateTime();
+        DateTime? unixEnd = unixEvent.EndDateTime();
+        Expect("EPG-Zeit: Ende = Start + Dauer (Unix)",
+            unixStart is not null && unixEnd is not null && unixEnd.Value - unixStart.Value == TimeSpan.FromSeconds(2700));
+
+        EpgEvent textEvent = new() { StartTime = "20:15", TimeTotal = "45" };
+        DateTime? textStart = textEvent.StartDateTime();
+        DateTime? textEnd = textEvent.EndDateTime();
+        Expect("EPG-Zeit: Ende = Start + Dauer (Text)",
+            textStart is not null && textEnd is not null && textEnd.Value - textStart.Value == TimeSpan.FromMinutes(45));
+
         try
         {
             SettingsWindow settingsWindow = new();
@@ -1081,6 +1115,8 @@ else {
         Render(directory, "ProfilesWindow", () => new ProfilesWindow(), 720, 580);
         Render(directory, "VideoWindow", () => new VideoWindow(), 660, 540);
         Render(directory, "EpgWindow", () => EpgWindow.CreateForSelfTest(), 560, 500);
+        Render(directory, "TimersWindow", () => TimersWindow.CreateForSelfTest(), 560, 520);
+        Render(directory, "EpgGuideWindow", () => EpgGuideWindow.CreateForSelfTest(), 600, 560);
         Render(directory, "PromptWindow", () => PromptWindow.CreateForSelfTest(), 360, 0);
         Render(directory, "ProgressCheck", CreateProgressCheckWindow, 250, 70);
 

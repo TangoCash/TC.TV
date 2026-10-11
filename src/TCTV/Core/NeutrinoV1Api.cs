@@ -923,6 +923,38 @@ public sealed class NeutrinoV1Api : BoxApiClient
             .ConfigureAwait(false);
     }
 
+    /// <summary>Löscht einen Timer (DELETE /api/v1/timers/{id}).</summary>
+    public override async Task DeleteTimerAsync(string timerId, CancellationToken cancellationToken = default)
+        => await RequestTextAsync(
+            HttpMethod.Delete, Prefix + "/timers/" + Uri.EscapeDataString(timerId),
+            null, withSession: true, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>EPG aller Sender eines Bouquets (großes Zeitfenster) für Programmübersicht/Suche.</summary>
+    public override async Task<List<EpgChannel>> GetBouquetEpgAsync(string bouquetNumber, int hoursAhead, CancellationToken cancellationToken = default)
+    {
+        List<Channel> channels = await GetChannelsAsync(bouquetNumber, cancellationToken).ConfigureAwait(false);
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        Dictionary<string, List<EpgEvent>> guide = await GetEpgGridAsync(
+                bouquetNumber, now - (3 * 3600), now + (long)hoursAhead * 3600, cancellationToken)
+            .ConfigureAwait(false);
+
+        List<EpgChannel> result = new();
+        foreach (Channel channel in channels)
+        {
+            if (guide.TryGetValue(NormalizeChannelId(channel.Id), out List<EpgEvent>? events) && events.Count > 0)
+            {
+                events.Sort((left, right) => left.StartUnix.CompareTo(right.StartUnix));
+                result.Add(new EpgChannel { ChannelId = channel.Id, ChannelName = channel.Name, Events = events });
+            }
+            else
+            {
+                result.Add(new EpgChannel { ChannelId = channel.Id, ChannelName = channel.Name });
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Wandelt eine lokale Zeitangabe ("yyyy-MM-ddTHH:mm:ss" und übliche Schreibweisen)
     /// in Unix-Sekunden. Zahlen gelten bereits als Unix-Sekunden; "0" und leer ergeben false.

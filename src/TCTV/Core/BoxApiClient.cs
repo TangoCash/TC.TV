@@ -88,6 +88,12 @@ public abstract class BoxApiClient : IDisposable
     /// <summary>EPG-Sendungen eines einzelnen Senders (für "weiteres EPG").</summary>
     public abstract Task<List<EpgEvent>> GetChannelEpgAsync(string channelId, string bouquetNumber, CancellationToken cancellationToken = default);
 
+    /// <summary>Löscht einen Timer der Box.</summary>
+    public abstract Task DeleteTimerAsync(string timerId, CancellationToken cancellationToken = default);
+
+    /// <summary>EPG aller Sender eines Bouquets (für Programmübersicht/Suche).</summary>
+    public abstract Task<List<EpgChannel>> GetBouquetEpgAsync(string bouquetNumber, int hoursAhead, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Wurzelverzeichnisse für Videos/Aufnahmen. <paramref name="dirToken"/> ist
     /// "recordingdir", "moviedir" oder "allmoviedirs".

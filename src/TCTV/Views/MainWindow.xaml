@@ -94,19 +94,21 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
-                                <Border Grid.Column="0"
-                                        MinWidth="28" Height="28"
-                                        CornerRadius="8"
-                                        VerticalAlignment="Top"
-                                        Background="{DynamicResource Brush.Chip}">
-                                    <TextBlock Text="{Binding Number}"
-                                               FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Margin="6,0"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource Brush.Muted}" />
-                                </Border>
+                                <Grid Grid.Column="0" MinWidth="56" Height="28" VerticalAlignment="Top">
+                                    <Image Source="{Binding LogoPath}" Width="56" Height="28" Stretch="Uniform"
+                                           Visibility="{Binding HasLogo, Converter={StaticResource BoolToVis}}" />
+                                    <Border MinWidth="56" Height="28" CornerRadius="8"
+                                            Background="{DynamicResource Brush.Chip}"
+                                            Visibility="{Binding ShowNumber, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="{Binding Number}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Margin="6,0"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource Brush.Muted}" />
+                                    </Border>
+                                </Grid>
 
                                 <StackPanel Grid.Column="1" Margin="10,0,0,0">
                                     <Grid>
@@ -185,8 +187,9 @@
                     <Button x:Name="StreamButton" Style="{StaticResource PrimaryButton}" Margin="0,0,6,6" Click="OnStream" />
                     <Button x:Name="StopButton" Style="{StaticResource GhostButton}" Margin="0,0,6,6" Click="OnStop" />
                     <Button x:Name="VideoButton" Style="{StaticResource GhostButton}" Margin="0,0,6,6" Click="OnVideo" />
+                    <Button x:Name="GuideButton" Style="{StaticResource GhostButton}" Margin="0,0,6,6" Click="OnGuide" />
                     <Button x:Name="RefreshButton" Style="{StaticResource GhostButton}" Margin="0,0,6,6" Click="OnRefreshEpg" />
-                    <Button x:Name="TimerButton" Style="{StaticResource GhostButton}" Margin="0,0,6,6" Click="OnTimer" />
+                    <Button x:Name="TimersButton" Style="{StaticResource GhostButton}" Margin="0,0,6,6" Click="OnTimers" />
                     <Button x:Name="SettingsButton" Style="{StaticResource GhostButton}" Margin="0,0,6,6" Click="OnSettings" />
                     <Button x:Name="ProfilesButton" Style="{StaticResource GhostButton}" Margin="0,0,0,6" Click="OnProfiles" />
                 </WrapPanel>

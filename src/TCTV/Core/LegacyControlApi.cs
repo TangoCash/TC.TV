@@ -484,6 +484,41 @@ public sealed class LegacyControlApi : BoxApiClient
         await GetTextAsync(path, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Löscht einen Timer (/control/timer?action=delete).</summary>
+    public override async Task DeleteTimerAsync(string timerId, CancellationToken cancellationToken = default)
+        => await GetTextAsync(
+            "/control/timer?action=delete&id=" + Uri.EscapeDataString(timerId),
+            cancellationToken).ConfigureAwait(false);
+
+    /// <summary>EPG aller Sender eines Bouquets – die alte API liefert nur erste/zweite Sendung.</summary>
+    public override async Task<List<EpgChannel>> GetBouquetEpgAsync(string bouquetNumber, int hoursAhead, CancellationToken cancellationToken = default)
+    {
+        List<Channel> channels = await GetBouquetAsync(bouquetNumber, cancellationToken).ConfigureAwait(false);
+        List<EpgChannel> result = new();
+        foreach (Channel channel in channels)
+        {
+            List<EpgEvent> events = new();
+            if (!channel.FirstEpg.IsEmpty)
+            {
+                events.Add(channel.FirstEpg);
+            }
+
+            if (!channel.SecondEpg.IsEmpty)
+            {
+                events.Add(channel.SecondEpg);
+            }
+
+            result.Add(new EpgChannel
+            {
+                ChannelId = channel.Id,
+                ChannelName = channel.Name,
+                Events = events,
+            });
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Timer-Liste im Kompaktformat (/control/timer?format=id). Eine Zeile je
     /// Timer mit den Feldern:

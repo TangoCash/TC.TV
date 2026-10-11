@@ -8,9 +8,9 @@ namespace TCTV.Generated;
 /// <summary>Sprach-Tabelle des Originalprogramms ($ei). Index = Zeile, 0 = Deutsch, 1 = Englisch.</summary>
 public static class LocalizationTable
 {
-    public const int Count = 335;
+    public const int Count = 341;
 
-    public static readonly string[,] Strings = new string[335, 2]
+    public static readonly string[,] Strings = new string[341, 2]
     {
         { "Einstellungen", "Settings" },
         { "Hilfe", "Help" },
@@ -347,6 +347,12 @@ public static class LocalizationTable
         { "Version {0}", "Version {0}" },
         { "Weiteres EPG", "More EPG" },
         { "Aktuellen Sender streamen", "Stream current channel" },
+        { "Programm", "Programme" },
+        { "Aufnahmen", "Recordings" },
+        { "Timer", "Timers" },
+        { "Laufende Aufnahmen", "Running recordings" },
+        { "Suche", "Search" },
+        { "Aufnehmen", "Record" },
     };
 }
 

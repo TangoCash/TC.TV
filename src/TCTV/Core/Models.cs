@@ -47,6 +47,39 @@ public sealed class EpgEvent
 
     /// <summary>Dauer in Minuten als Zahl (0, wenn unbekannt).</summary>
     public int TotalMinutes => int.TryParse(TimeTotal, out int v) ? v : 0;
+
+    /// <summary>Startzeit als lokale DateTime, wenn bestimmbar (sonst null).</summary>
+    public DateTime? StartDateTime()
+    {
+        if (StartUnix > 0)
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(StartUnix).ToLocalTime().DateTime;
+        }
+
+        return DateTime.TryParse(StartTime, out DateTime parsed) ? parsed : null;
+    }
+
+    /// <summary>Endezeit als lokale DateTime, wenn bestimmbar (sonst null).</summary>
+    public DateTime? EndDateTime()
+    {
+        DateTime? start = StartDateTime();
+        if (start is null)
+        {
+            return null;
+        }
+
+        if (DurationSeconds > 0)
+        {
+            return start.Value.AddSeconds(DurationSeconds);
+        }
+
+        if (TotalMinutes > 0)
+        {
+            return start.Value.AddMinutes(TotalMinutes);
+        }
+
+        return null;
+    }
 }
 
 /// <summary>Ein Sender aus /control/getbouquet?format=xml (&lt;channel&gt;).</summary>
@@ -139,6 +172,16 @@ public sealed class RunningRecording
     public long Start { get; init; }
 
     public long Stop { get; init; }
+}
+
+/// <summary>EPG eines Senders für die Programmübersicht (alle Sendungen eines Bouquets).</summary>
+public sealed class EpgChannel
+{
+    public string ChannelId { get; init; } = string.Empty;
+
+    public string ChannelName { get; init; } = string.Empty;
+
+    public List<EpgEvent> Events { get; init; } = new();
 }
 
 /// <summary>Vom Client benoetigte Serverdaten (Modus/Standby).</summary>

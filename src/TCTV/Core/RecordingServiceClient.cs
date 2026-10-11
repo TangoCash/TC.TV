@@ -69,6 +69,37 @@ public sealed class RecordingServiceClient : IDisposable
     public Task<List<EpgEvent>> GetChannelEpgAsync(string channelId, string bouquetNumber, CancellationToken cancellationToken = default)
         => _api.GetChannelEpgAsync(channelId, bouquetNumber, cancellationToken);
 
+    /// <summary>Löscht einen Timer der Box.</summary>
+    public Task DeleteTimerAsync(string timerId, CancellationToken cancellationToken = default)
+        => _api.DeleteTimerAsync(timerId, cancellationToken);
+
+    /// <summary>EPG aller Sender eines Bouquets (für Programmübersicht/Suche).</summary>
+    public Task<List<EpgChannel>> GetBouquetEpgAsync(string bouquetNumber, int hoursAhead, CancellationToken cancellationToken = default)
+        => _api.GetBouquetEpgAsync(bouquetNumber, hoursAhead, cancellationToken);
+
+    /// <summary>Adresse des Senderlogos (http://…) oder null, wenn nicht bestimmbar.</summary>
+    public string? BuildLogoUrl(Channel channel)
+    {
+        if (string.IsNullOrEmpty(channel.Id))
+        {
+            return null;
+        }
+
+        // Neue API: Logo-Endpunkt je Sender (/api/v1/channels/{id}/logo).
+        if (ApiVersion == BoxApi.V1)
+        {
+            return WebBaseUrl + "/api/v1/channels/" + Uri.EscapeDataString(channel.Id) + "/logo";
+        }
+
+        // Alte API: das <logo>-Feld aus getbouquet enthält den Pfad.
+        if (!string.IsNullOrEmpty(channel.Logo) && channel.Logo.StartsWith("/", StringComparison.Ordinal))
+        {
+            return WebBaseUrl + channel.Logo;
+        }
+
+        return null;
+    }
+
     public Task<List<string>> GetVideoRootsAsync(string dirToken, CancellationToken cancellationToken = default)
         => _api.GetVideoRootsAsync(dirToken, cancellationToken);
 

@@ -354,6 +354,7 @@ else {
         Check("EpgWindow", () => EpgWindow.CreateForSelfTest());
         Check("TimersWindow", () => TimersWindow.CreateForSelfTest());
         Check("EpgGuideWindow", () => EpgGuideWindow.CreateForSelfTest());
+        Check("HelpWindow", () => new HelpWindow());
         Check("PromptWindow", () => PromptWindow.CreateForSelfTest());
 
         RunApiChecks(report);
@@ -1117,6 +1118,7 @@ else {
         Render(directory, "EpgWindow", () => EpgWindow.CreateForSelfTest(), 560, 500);
         Render(directory, "TimersWindow", () => TimersWindow.CreateForSelfTest(), 560, 520);
         Render(directory, "EpgGuideWindow", () => EpgGuideWindow.CreateForSelfTest(), 600, 560);
+        Render(directory, "HelpWindow", () => new HelpWindow(), 560, 560);
         Render(directory, "PromptWindow", () => PromptWindow.CreateForSelfTest(), 360, 0);
         Render(directory, "ProgressCheck", CreateProgressCheckWindow, 250, 70);
 

@@ -369,7 +369,7 @@ public partial class MainWindow : Window
         menu.Items.Add(Localization.T(30), null, (_, _) => OpenVideoWindow());
         menu.Items.Add(Localization.T(0), null, (_, _) => OpenSettings());
         menu.Items.Add(Localization.T(93), null, (_, _) => OpenProfiles());
-        menu.Items.Add(Localization.T(1), null, (_, _) => ToggleFullScreen());
+        menu.Items.Add(Localization.T(1), null, (_, _) => OpenHelp());
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(Localization.T(305), null, (_, _) => ExitApp());
 
@@ -940,6 +940,12 @@ public partial class MainWindow : Window
     private void OpenTimers()
     {
         TimersWindow window = new() { Owner = this };
+        window.ShowDialog();
+    }
+
+    private void OpenHelp()
+    {
+        HelpWindow window = new() { Owner = this };
         window.ShowDialog();
     }
 

@@ -91,6 +91,7 @@ public sealed class AppSession : IDisposable
         Settings.VideoMainDirectories = loaded.VideoMainDirectories;
         Settings.UpdateCheck = loaded.UpdateCheck;
         Settings.AdvancedSettings = loaded.AdvancedSettings;
+        Settings.LastBouquetNumber = loaded.LastBouquetNumber;
         Settings.VlcPath = loaded.VlcPath;
         Localization.Current = Settings.Language;
         VlcOptions = VlcOptions.FromIni(Ini);

@@ -56,6 +56,8 @@ public partial class EpgWindow : Window
         HeaderText.Text = channelName;
         CloseButton.Content = Localization.T(240);
         RecordMenuItem.Header = Localization.T(340);
+        ImdbMenuItem.Header = Localization.T(10);
+        TheTvdbMenuItem.Header = Localization.T(11);
 
         if (events.Count == 0)
         {
@@ -67,6 +69,22 @@ public partial class EpgWindow : Window
         else
         {
             EventList.ItemsSource = events.Select(e => new EpgEntry(e)).ToList();
+        }
+    }
+
+    private void OnImdb(object sender, RoutedEventArgs e)
+    {
+        if (EventList.SelectedItem is EpgEntry entry)
+        {
+            App.OpenImdb(entry.Title);
+        }
+    }
+
+    private void OnTheTvdb(object sender, RoutedEventArgs e)
+    {
+        if (EventList.SelectedItem is EpgEntry entry)
+        {
+            App.OpenTheTvdb(entry.Title);
         }
     }
 

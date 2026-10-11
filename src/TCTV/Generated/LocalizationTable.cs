@@ -8,9 +8,9 @@ namespace TCTV.Generated;
 /// <summary>Sprach-Tabelle des Originalprogramms ($ei). Index = Zeile, 0 = Deutsch, 1 = Englisch.</summary>
 public static class LocalizationTable
 {
-    public const int Count = 341;
+    public const int Count = 343;
 
-    public static readonly string[,] Strings = new string[341, 2]
+    public static readonly string[,] Strings = new string[343, 2]
     {
         { "Einstellungen", "Settings" },
         { "Hilfe", "Help" },
@@ -23,7 +23,7 @@ public static class LocalizationTable
         { "TC.TV fade in/out", "TC.TV fade in/out" },
         { "Timer setzen", "Set timer" },
         { "IMDb.com", "IMDb.com" },
-        { "TVspielfilm.de", "TVspielfilm.de" },
+        { "TheTVDB", "TheTVDB" },
         { "Transponder", "Transponder " },
         { "unbekannte Dauer", "unknown duration " },
         { "Keine EPG Informationen vorhanden", "No EPG information available " },
@@ -353,6 +353,8 @@ public static class LocalizationTable
         { "Laufende Aufnahmen", "Running recordings" },
         { "Suche", "Search" },
         { "Aufnehmen", "Record" },
+        { "Exportieren", "Export" },
+        { "Importieren", "Import" },
     };
 }
 

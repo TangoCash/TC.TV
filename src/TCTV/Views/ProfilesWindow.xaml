@@ -115,6 +115,8 @@
             <Button x:Name="DeleteButton" Margin="0,0,6,0" Click="OnDelete" />
             <Button x:Name="ApplyButton" Margin="0,0,6,0" Click="OnApply" />
             <Button x:Name="ActivateButton" Margin="0,0,6,0" Click="OnActivate" />
+            <Button x:Name="ExportButton" Margin="0,0,6,0" Click="OnExport" />
+            <Button x:Name="ImportButton" Margin="0,0,6,0" Click="OnImport" />
             <Button x:Name="CloseButton" Click="OnClose" />
         </WrapPanel>
     </Grid>

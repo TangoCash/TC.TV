@@ -299,6 +299,14 @@ else {
         }
     }
 
+    /// <summary>Öffnet die IMDb-Suche für eine Sendung.</summary>
+    public static void OpenImdb(string title)
+        => OpenReleasePage("https://www.imdb.com/find?q=" + Uri.EscapeDataString(title) + "&s=all");
+
+    /// <summary>Öffnet die TheTVDB-Suche für eine Sendung.</summary>
+    public static void OpenTheTvdb(string title)
+        => OpenReleasePage("https://thetvdb.com/search?query=" + Uri.EscapeDataString(title));
+
     private static bool HasSelfTestArgument(string[] args)
     {
         foreach (string argument in args)

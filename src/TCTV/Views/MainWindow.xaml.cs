@@ -520,7 +520,8 @@ public partial class MainWindow : Window
             BouquetCombo.ItemsSource = bouquets;
             if (bouquets.Count > 0)
             {
-                BouquetCombo.SelectedIndex = 0;
+                int restore = FindBouquetIndex(bouquets, _session.Settings.LastBouquetNumber);
+                BouquetCombo.SelectedIndex = restore >= 0 ? restore : 0;
             }
 
             _suppressBouquetChange = false;
@@ -538,7 +539,8 @@ public partial class MainWindow : Window
             }
 
             SetEmptyHint(null);
-            await LoadChannelsAsync(bouquets[0].Number);
+            Bouquet selected = bouquets[BouquetCombo.SelectedIndex];
+            await LoadChannelsAsync(selected.Number);
         }
         catch (OperationCanceledException)
         {
@@ -689,7 +691,31 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Das zuletzt gewählte Bouquet merken und beim nächsten Start wiederherstellen.
+        _session.Settings.LastBouquetNumber = bouquet.Number;
+        _session.Ini.Write("Benutzerdaten", "Bouquet", bouquet.Number);
+        _session.Ini.Save();
+
         _ = LoadChannelsAsync(bouquet.Number);
+    }
+
+    /// <summary>Index eines Bouquets in der Liste oder -1.</summary>
+    private static int FindBouquetIndex(List<Bouquet> bouquets, string number)
+    {
+        if (string.IsNullOrEmpty(number))
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < bouquets.Count; i++)
+        {
+            if (string.Equals(bouquets[i].Number, number, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private void OnChannelChanged(object sender, SelectionChangedEventArgs e)

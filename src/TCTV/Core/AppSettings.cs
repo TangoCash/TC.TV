@@ -17,6 +17,9 @@ public sealed class AppSettings
     /// <summary>Dateiname des aktiven Profils, z. B. "Box100.conf3".</summary>
     public string ProfileFileName { get; set; } = string.Empty;
 
+    /// <summary>Benutzerdaten\Bouquet – zuletzt gewähltes Bouquet (wird beim Start wiederhergestellt).</summary>
+    public string LastBouquetNumber { get; set; } = string.Empty;
+
     public string VlcPath { get; set; } = string.Empty;
 
     /// <summary>Optionen\Rekursive Videoanzeige.</summary>
@@ -56,6 +59,7 @@ public sealed class AppSettings
         Language = Localization.Parse(ini.Read("Benutzerdaten", "Sprache", "deutsch")),
         ThemeValue = Default(ini.Read("Benutzerdaten", "Theme", string.Empty), "3"),
         ProfileFileName = ini.Read("Benutzerdaten", "Profil", string.Empty),
+        LastBouquetNumber = ini.Read("Benutzerdaten", "Bouquet", string.Empty),
         VlcPath = ini.Read("Benutzerdaten", "VLC Pfad", string.Empty),
         AdvancedSettings = ini.ReadInt("Benutzerdaten", "erweiterte Einstellungen") == 1,
         RecursiveVideoDisplay = ini.ReadInt("Optionen", "Rekursive Videoanzeige", 1) == 1,
@@ -83,6 +87,11 @@ public sealed class AppSettings
         if (!string.IsNullOrEmpty(ProfileFileName))
         {
             ini.Write("Benutzerdaten", "Profil", ProfileFileName);
+        }
+
+        if (!string.IsNullOrEmpty(LastBouquetNumber))
+        {
+            ini.Write("Benutzerdaten", "Bouquet", LastBouquetNumber);
         }
 
         if (AdvancedSettings)

@@ -44,6 +44,8 @@
                 <ListBox.ContextMenu>
                     <ContextMenu>
                         <MenuItem x:Name="RecordMenuItem" Click="OnRecord" />
+                        <MenuItem x:Name="ImdbMenuItem" Click="OnImdb" />
+                        <MenuItem x:Name="TheTvdbMenuItem" Click="OnTheTvdb" />
                     </ContextMenu>
                 </ListBox.ContextMenu>
                 <ListBox.ItemTemplate>

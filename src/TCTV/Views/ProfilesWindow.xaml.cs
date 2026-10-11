@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using Microsoft.Win32;
 using TCTV.Core;
 using Localization = TCTV.Core.Localization;
 
@@ -34,6 +35,8 @@ public partial class ProfilesWindow : Window
         DeleteButton.Content = Localization.T(23);
         ApplyButton.Content = Localization.T(302);
         ActivateButton.Content = Localization.T(24);
+        ExportButton.Content = Localization.T(341);
+        ImportButton.Content = Localization.T(342);
         CloseButton.Content = Localization.T(20);
 
         LabelApi.Text = "API";
@@ -184,6 +187,65 @@ public partial class ProfilesWindow : Window
     }
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>Exportiert das markierte Profil als .conf3-Datei.</summary>
+    private void OnExport(object sender, RoutedEventArgs e)
+    {
+        if (ProfileList.SelectedItem is not string name)
+        {
+            return;
+        }
+
+        SaveFileDialog dialog = new()
+        {
+            FileName = name + ProfileStore.Extension,
+            Filter = "Profil (*.conf3)|*.conf3",
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            try
+            {
+                File.Copy(_session.Profiles.GetPath(name), dialog.FileName, overwrite: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                MessageBox.Show(ex.Message, Localization.T(58), MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    /// <summary>Importiert eine .conf3-Datei als Profil.</summary>
+    private void OnImport(object sender, RoutedEventArgs e)
+    {
+        OpenFileDialog dialog = new()
+        {
+            Filter = "Profil (*.conf3)|*.conf3",
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        string name = Path.GetFileNameWithoutExtension(dialog.FileName);
+        if (name.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            File.Copy(dialog.FileName, _session.Profiles.GetPath(name), overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(ex.Message, Localization.T(58), MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        LoadProfiles();
+    }
 
     /// <summary>
     /// Nur für den Selbsttest: stellt die API-Auswahl im Fenster ein (entspricht der

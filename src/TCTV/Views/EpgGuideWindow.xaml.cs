@@ -75,6 +75,8 @@ public partial class EpgGuideWindow : Window
         CloseButton.Content = Localization.T(240);
         EmptyHintText.Text = Localization.T(2);
         RecordMenuItem.Header = Localization.T(340);
+        ImdbMenuItem.Header = Localization.T(10);
+        TheTvdbMenuItem.Header = Localization.T(11);
     }
 
     private async Task ReloadAsync()
@@ -157,6 +159,22 @@ public partial class EpgGuideWindow : Window
         }
         catch (OperationCanceledException)
         {
+        }
+    }
+
+    private void OnImdb(object sender, RoutedEventArgs e)
+    {
+        if (EventList.SelectedItem is EpgGuideEntry entry)
+        {
+            App.OpenImdb(entry.Title);
+        }
+    }
+
+    private void OnTheTvdb(object sender, RoutedEventArgs e)
+    {
+        if (EventList.SelectedItem is EpgGuideEntry entry)
+        {
+            App.OpenTheTvdb(entry.Title);
         }
     }
 

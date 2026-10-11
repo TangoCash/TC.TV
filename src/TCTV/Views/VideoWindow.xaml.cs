@@ -46,6 +46,20 @@ public sealed class VideoEntry
 
         return value.ToString(unit == 0 ? "0" : "0.#", System.Globalization.CultureInfo.CurrentCulture) + " " + units[unit];
     }
+
+    /// <summary>
+    /// Vergleich für die Anzeige: Ordner zuerst, danach alphabetisch nach Name
+    /// (ohne Beachtung von Groß-/Kleinschreibung).
+    /// </summary>
+    internal static int Compare(VideoEntry x, VideoEntry y)
+    {
+        if (x.IsDirectory != y.IsDirectory)
+        {
+            return x.IsDirectory ? -1 : 1;
+        }
+
+        return StringComparer.CurrentCultureIgnoreCase.Compare(x.Name, y.Name);
+    }
 }
 
 /// <summary>
@@ -151,6 +165,7 @@ public partial class VideoWindow : Window
 
     private void SetEntries(List<VideoEntry> entries)
     {
+        entries.Sort(VideoEntry.Compare);
         EntryList.ItemsSource = entries;
         if (entries.Count > 0)
         {

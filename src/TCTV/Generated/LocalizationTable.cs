@@ -332,7 +332,7 @@ public static class LocalizationTable
         { "Standardmäßig erscheint das Fenster am rechten Rand. Wenn diese Option aktiviert ist, erscheint es auf der linken Seite.", "Normally the window appears on the right. If this Option is checked, it appears on the left." },
         { "Das Fenster erscheint, wenn man mit dem Mauscursor an den definierten Rand fährt.", "The Window appears, if you move the mousecursor to the defined edge." },
         { "Update auf Neutrino-Images.de verfügbar.", "Update available at Neutrino-Images.de" },
-        { "Rekursiv", "Recursive" },
+        { "inkl. Unterordner", "incl. subfolders" },
         { "Auch Videos aus Unterordnern werden angezeigt.", "Also videos from subfolders are displayed" },
         { "MainDirs", "MainDirs" },
         { "Nur Hauptverzeichnisse in der Auswahlliste.", "Only main directories in the pick list." },

@@ -720,6 +720,18 @@ else {
         Expect("Fade: außerhalb in der Höhe blendet aus",
             TCTV.Views.MainWindow.ShouldHide(new Point(1600, 1200), fadeArea, 480, rightEdge: true));
 
+        // --- Video-Browser: alphabetische Sortierung (Ordner zuerst) ---
+        VideoEntry dirA = new(new FileEntry { Name = "aaa", IsDirectory = true });
+        VideoEntry dirB = new(new FileEntry { Name = "BBB", IsDirectory = true });
+        VideoEntry fileA = new(new FileEntry { Name = "aaa.mp4" });
+        VideoEntry fileZ = new(new FileEntry { Name = "ZZZ.ts" });
+
+        Expect("Video: Ordner stehen vor Dateien", VideoEntry.Compare(dirB, fileA) < 0);
+        Expect("Video: Ordner alphabetisch sortiert", VideoEntry.Compare(dirA, dirB) < 0);
+        Expect("Video: Dateien alphabetisch sortiert", VideoEntry.Compare(fileA, fileZ) < 0);
+        Expect("Video: gleicher Name (Groß/Klein) gilt als gleich",
+            VideoEntry.Compare(dirA, new VideoEntry(new FileEntry { Name = "AAA", IsDirectory = true })) == 0);
+
         try
         {
             SettingsWindow settingsWindow = new();

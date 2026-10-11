@@ -38,6 +38,7 @@ public partial class SettingsWindow : Window
         UpdateCheckBox.Content = Localization.T(326);
         UpdateCheckBox.ToolTip = Localization.T(327);
         CheckUpdatesButton.Content = Localization.T(328);
+        VersionText.Text = string.Format(Localization.T(332), UpdateChecker.Display(UpdateChecker.CurrentVersion));
     }
 
     /// <summary>Reihenfolge der Themen im Auswahlfeld (Dark orange ist Standard).</summary>

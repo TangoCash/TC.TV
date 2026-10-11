@@ -96,9 +96,12 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <CheckBox x:Name="UpdateCheckBox" Grid.Column="0" VerticalAlignment="Center" />
-                                <Button x:Name="CheckUpdatesButton" Grid.Column="1" Style="{StaticResource GhostButton}" Click="OnCheckUpdates" />
+                                <TextBlock x:Name="VersionText" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0"
+                                           Style="{StaticResource Muted}" />
+                                <Button x:Name="CheckUpdatesButton" Grid.Column="2" Style="{StaticResource GhostButton}" Click="OnCheckUpdates" />
                             </Grid>
                         </Grid>
                     </StackPanel>

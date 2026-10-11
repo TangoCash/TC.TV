@@ -8,9 +8,9 @@ namespace TCTV.Generated;
 /// <summary>Sprach-Tabelle des Originalprogramms ($ei). Index = Zeile, 0 = Deutsch, 1 = Englisch.</summary>
 public static class LocalizationTable
 {
-    public const int Count = 332;
+    public const int Count = 333;
 
-    public static readonly string[,] Strings = new string[332, 2]
+    public static readonly string[,] Strings = new string[333, 2]
     {
         { "Einstellungen", "Settings" },
         { "Hilfe", "Help" },
@@ -344,6 +344,7 @@ public static class LocalizationTable
         { "Keine neuere Version verfügbar.", "No newer version available." },
         { "Keine passende Variante gefunden.", "No matching variant found." },
         { "Update heruntergeladen. Jetzt installieren und neu starten?", "Update downloaded. Install and restart now?" },
+        { "Version {0}", "Version {0}" },
     };
 }
 

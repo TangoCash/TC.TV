@@ -12,9 +12,16 @@ namespace TCTV.Core;
 public static class VlcLauncher
 {
     private const int WmChar = 0x0102;
+    private const int WmKeyDown = 0x0100;
+    private const int WmKeyUp = 0x0101;
+    private const int WmClose = 0x0010;
+    private const int VkS = 0x53; // Taste "s" (VLC-Hotkey für Stop)
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindow(string lpClassName, string? lpWindowName);
 
     /// <summary>
     /// Ermittelt den VLC-Pfad in derselben Reihenfolge wie das Original und
@@ -119,7 +126,7 @@ public static class VlcLauncher
             return;
         }
 
-        IntPtr handle = MainWindowHandle("vlc");
+        IntPtr handle = FindVlcWindow();
         if (handle == IntPtr.Zero)
         {
             return;
@@ -127,13 +134,37 @@ public static class VlcLauncher
 
         if (options.KeepVlcOnZap)
         {
-            // Taste "s" (Stop) an das VLC-Fenster senden.
-            PostMessage(handle, WmChar, (IntPtr)'s', IntPtr.Zero);
+            // Taste "s" (Stop) als vollständige Tastenfolge an VLC senden, damit
+            // Qt den Hotkey zuverlässig auswertet (ein einzelnes WM_CHAR genügt
+            // bei vielen Qt-Versionen nicht).
+            SendStopKey(handle);
         }
         else
         {
-            ProcessClose("vlc");
+            // VLC-Fenster schließen (WinClose im Original) statt hart zu beenden.
+            PostMessage(handle, WmClose, IntPtr.Zero, IntPtr.Zero);
         }
+    }
+
+    /// <summary>Sucht das VLC-Hauptfenster – auch wenn VLC unter anderem Namen läuft (z. B. VLCPortable.exe).</summary>
+    private static IntPtr FindVlcWindow()
+    {
+        IntPtr fromProcess = MainWindowHandle("vlc");
+        if (fromProcess != IntPtr.Zero)
+        {
+            return fromProcess;
+        }
+
+        // VLC-Hauptfenster ist ein Qt-Fenster (Klasse "QWidget").
+        return FindWindow("QWidget", null);
+    }
+
+    /// <summary>Sendet die Taste "s" (VLC-Stop-Hotkey) als Key-Down/Char/Key-Up-Folge.</summary>
+    private static void SendStopKey(IntPtr handle)
+    {
+        PostMessage(handle, WmKeyDown, (IntPtr)VkS, IntPtr.Zero);
+        PostMessage(handle, WmChar, (IntPtr)'s', IntPtr.Zero);
+        PostMessage(handle, WmKeyUp, (IntPtr)VkS, IntPtr.Zero);
     }
 
     public static void Shutdown()

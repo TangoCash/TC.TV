@@ -896,11 +896,14 @@ else {
         Expect("neue API: Sender-IDs werden normalisiert",
             NeutrinoV1Api.NormalizeChannelId("03f300012b66") == NeutrinoV1Api.NormalizeChannelId("3f300012b66"));
 
-        const string v1Bouquets = "{\"items\":[{\"id\":1,\"name\":\"Favoriten\",\"tv_count\":2}]}";
+        const string v1Bouquets = "{\"items\":[{\"id\":1,\"name\":\"Favoriten\",\"tv_count\":2,\"radio_count\":3}]}";
         List<Bouquet> v1BouquetsParsed = NeutrinoV1Api.ParseBouquets(v1Bouquets);
         Expect("neue API: /bouquets liefert das Bouquet",
             v1BouquetsParsed.Count == 1 && v1BouquetsParsed[0].Number == "1" && v1BouquetsParsed[0].Name == "Favoriten",
             v1BouquetsParsed.Count.ToString());
+        Expect("neue API: /bouquets nennt TV- und Radio-Anzahl",
+            v1BouquetsParsed.Count == 1 && v1BouquetsParsed[0].TvCount == 2 && v1BouquetsParsed[0].RadioCount == 3,
+            "tv=" + v1BouquetsParsed[0].TvCount + " radio=" + v1BouquetsParsed[0].RadioCount);
 
         const long v1Now = 1704137400;   // 15 Minuten nach Beginn der "Tagesschau" (2700 s)
         Dictionary<string, List<EpgEvent>> v1Guide = NeutrinoV1Api.ParseEpgGrid(v1Grid, v1Now);
@@ -999,6 +1002,13 @@ else {
         Expect("neue API: Zap weckt die Box nicht (wake:false)",
             NeutrinoV1Api.BuildZapBody("361d03f300012b66") == "{\"channel_id\":\"361d03f300012b66\",\"wake\":false}",
             NeutrinoV1Api.BuildZapBody("361d03f300012b66"));
+
+        Expect("neue API: Radiosender werden erkannt",
+            NeutrinoV1Api.ParseChannels("{\"items\":[{\"id\":\"abc\",\"number\":1,\"name\":\"Radio X\",\"kind\":\"radio\"}]}")
+                .FirstOrDefault()?.IsRadio == true);
+        Expect("neue API: Webradio wird ebenfalls als Radio erkannt",
+            NeutrinoV1Api.ParseChannels("{\"items\":[{\"id\":\"abc\",\"number\":1,\"name\":\"Webradio\",\"kind\":\"webradio\"}]}")
+                .FirstOrDefault()?.IsRadio == true);
     }
 
     /// <summary>Prüft Versionsvergleich und Release-Auswertung der Updateprüfung.</summary>

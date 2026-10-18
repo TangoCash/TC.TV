@@ -123,8 +123,23 @@ public sealed class LegacyControlApi : BoxApiClient
 
     public override async Task<List<Channel>> GetBouquetAsync(string bouquetNumber, CancellationToken cancellationToken = default)
     {
+        // Die alte API liefert ohne mode nur die Hälfte, auf der die Box gerade
+        // steht (TV oder Radio). Damit eine reine Radio-Bouquet nicht leer bleibt,
+        // wird zuerst die Fernseh-Hälfte geholt und bei leerer Liste die Radio-Hälfte.
+        List<Channel> channels = await GetBouquetChannelsAsync(bouquetNumber, "TV", cancellationToken).ConfigureAwait(false);
+        if (channels.Count == 0)
+        {
+            channels = await GetBouquetChannelsAsync(bouquetNumber, "RADIO", cancellationToken).ConfigureAwait(false);
+        }
+
+        return channels;
+    }
+
+    /// <summary>Sender einer Hälfte (TV/RADIO) eines Bouquets inklusive EPG.</summary>
+    private async Task<List<Channel>> GetBouquetChannelsAsync(string bouquetNumber, string mode, CancellationToken cancellationToken)
+    {
         string? xml = await GetTextAsync(
-            "/control/getbouquet?bouquet=" + Uri.EscapeDataString(bouquetNumber) + "&epg=true&format=xml",
+            "/control/getbouquet?bouquet=" + Uri.EscapeDataString(bouquetNumber) + "&mode=" + mode + "&epg=true&format=xml",
             cancellationToken).ConfigureAwait(false);
 
         return xml is null ? new List<Channel>() : ParseBouquet(xml);

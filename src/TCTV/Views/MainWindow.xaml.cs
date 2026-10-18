@@ -54,6 +54,11 @@ public sealed class ChannelItem
     {
         get
         {
+            if (Channel.IsRadio)
+            {
+                return Localization.T(343);
+            }
+
             string description = Channel.FirstEpg.Description;
             if (string.IsNullOrEmpty(description))
             {
@@ -836,9 +841,11 @@ public partial class MainWindow : Window
             }
 
             string arguments;
-            string? liveUrl = _session.Client.ApiVersion == BoxApi.V1
-                ? await _session.Client.GetStreamUrlAsync(channel.Id, _cts.Token)
-                : null;
+            string? liveUrl = null;
+            if (_session.Client.ApiVersion == BoxApi.V1 && !channel.IsRadio)
+            {
+                liveUrl = await _session.Client.GetStreamUrlAsync(channel.Id, _cts.Token);
+            }
 
             if (liveUrl is not null)
             {

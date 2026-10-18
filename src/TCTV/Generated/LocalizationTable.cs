@@ -8,9 +8,9 @@ namespace TCTV.Generated;
 /// <summary>Sprach-Tabelle des Originalprogramms ($ei). Index = Zeile, 0 = Deutsch, 1 = Englisch.</summary>
 public static class LocalizationTable
 {
-    public const int Count = 343;
+    public const int Count = 344;
 
-    public static readonly string[,] Strings = new string[343, 2]
+    public static readonly string[,] Strings = new string[344, 2]
     {
         { "Einstellungen", "Settings" },
         { "Hilfe", "Help" },
@@ -355,6 +355,7 @@ public static class LocalizationTable
         { "Aufnehmen", "Record" },
         { "Exportieren", "Export" },
         { "Importieren", "Import" },
+        { "Radio", "Radio" },
     };
 }
 

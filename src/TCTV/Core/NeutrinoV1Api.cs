@@ -378,7 +378,7 @@ public sealed class NeutrinoV1Api : BoxApiClient
     /// </summary>
     public override async Task<List<Channel>> GetBouquetAsync(string bouquetNumber, CancellationToken cancellationToken = default)
     {
-        List<Channel> channels = await GetChannelsAsync(bouquetNumber, cancellationToken).ConfigureAwait(false);
+        List<Channel> channels = await GetBouquetChannelsAsync(bouquetNumber, cancellationToken).ConfigureAwait(false);
         if (channels.Count == 0)
         {
             return channels;
@@ -412,11 +412,15 @@ public sealed class NeutrinoV1Api : BoxApiClient
         return events;
     }
 
-    /// <summary>Sender eines Bouquets; blättert über <c>next_cursor</c>.</summary>
-    private async Task<List<Channel>> GetChannelsAsync(string bouquetNumber, CancellationToken cancellationToken)
+    /// <summary>
+    /// Sender eines Bouquets; blättert über <c>next_cursor</c>. <paramref name="mode"/>
+    /// ist "tv" (Vorgabe, wenn null), "radio" oder null.
+    /// </summary>
+    private async Task<List<Channel>> GetChannelsAsync(string bouquetNumber, string? mode, CancellationToken cancellationToken)
     {
         List<Channel> result = new();
         string baseQuery = "?bouquet=" + Uri.EscapeDataString(bouquetNumber)
+            + (string.IsNullOrEmpty(mode) ? string.Empty : "&mode=" + Uri.EscapeDataString(mode))
             + "&limit=" + ChannelPageSize.ToString(CultureInfo.InvariantCulture);
         string cursor = string.Empty;
 
@@ -440,6 +444,22 @@ public sealed class NeutrinoV1Api : BoxApiClient
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Sender eines Bouquets. /api/v1/channels liefert ohne <c>mode</c> nur die
+    /// Fernseh-Hälfte eines Bouquets; eine reine Radio-Bouquet wäre daher leer.
+    /// In dem Fall wird die Radio-Hälfte nachgeladen.
+    /// </summary>
+    private async Task<List<Channel>> GetBouquetChannelsAsync(string bouquetNumber, CancellationToken cancellationToken)
+    {
+        List<Channel> channels = await GetChannelsAsync(bouquetNumber, null, cancellationToken).ConfigureAwait(false);
+        if (channels.Count == 0)
+        {
+            channels = await GetChannelsAsync(bouquetNumber, "radio", cancellationToken).ConfigureAwait(false);
+        }
+
+        return channels;
     }
 
     /// <summary>
@@ -575,6 +595,8 @@ public sealed class NeutrinoV1Api : BoxApiClient
             {
                 Number = number > 0 ? number.ToString(CultureInfo.InvariantCulture) : string.Empty,
                 Name = name,
+                TvCount = JsonLong(item, "tv_count"),
+                RadioCount = JsonLong(item, "radio_count"),
             });
         }
 
@@ -622,6 +644,7 @@ public sealed class NeutrinoV1Api : BoxApiClient
                     Id = id,
                     ShortId = ShortIdOf(id),
                     Name = JsonText(item, "name"),
+                    Kind = JsonText(item, "kind"),
                 });
 
                 if (transponders is not null)
@@ -932,7 +955,7 @@ public sealed class NeutrinoV1Api : BoxApiClient
     /// <summary>EPG aller Sender eines Bouquets (großes Zeitfenster) für Programmübersicht/Suche.</summary>
     public override async Task<List<EpgChannel>> GetBouquetEpgAsync(string bouquetNumber, int hoursAhead, CancellationToken cancellationToken = default)
     {
-        List<Channel> channels = await GetChannelsAsync(bouquetNumber, cancellationToken).ConfigureAwait(false);
+        List<Channel> channels = await GetBouquetChannelsAsync(bouquetNumber, cancellationToken).ConfigureAwait(false);
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         Dictionary<string, List<EpgEvent>> guide = await GetEpgGridAsync(
                 bouquetNumber, now - (3 * 3600), now + (long)hoursAhead * 3600, cancellationToken)

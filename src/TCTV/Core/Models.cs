@@ -7,6 +7,12 @@ public sealed class Bouquet
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Anzahl Fernsehsender (nur neue API, /api/v1/bouquets; sonst 0).</summary>
+    public long TvCount { get; set; }
+
+    /// <summary>Anzahl Radiosender (nur neue API, /api/v1/bouquets; sonst 0).</summary>
+    public long RadioCount { get; set; }
+
     public override string ToString() => Name;
 }
 
@@ -99,6 +105,13 @@ public sealed class Channel
     public string BouquetNumber { get; set; } = string.Empty;
 
     public string IsActiveChannel { get; set; } = string.Empty;
+
+    /// <summary>Art des Senders ("tv", "radio", …; nur neue API).</summary>
+    public string Kind { get; set; } = string.Empty;
+
+    /// <summary>true für Radiosender.</summary>
+    public bool IsRadio => Kind.Equals("radio", StringComparison.OrdinalIgnoreCase)
+        || Kind.Equals("webradio", StringComparison.OrdinalIgnoreCase);
 
     public EpgEvent FirstEpg { get; set; } = new();
 

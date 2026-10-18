@@ -141,7 +141,7 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
 * **Alte API `/control/`** (Standard) – `LegacyControlApi`, folgende Endpunkte:
   `/control/info`, `/control/getmode`, `/control/gettime?rawtime`,
   `/control/standby`, `/control/zapto`, `/control/getbouquets`,
-  `/control/getbouquet?…&epg=true&format=xml`, `/control/getdir`,
+  `/control/getbouquet?…&mode=TV|RADIO&epg=true&format=xml`, `/control/getdir`,
   `/control/getmovies`, `/control/file?action=list`, `/control/timer`
   (`?format=xml`, `?format=id`, `?action=new`), `/control/currenttpchannels`.
   Basisauthentifikation über `NetworkCredential`
@@ -159,7 +159,7 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
     sich den zweiten Token und schickt ihn als `X-CSRF-Token` mit – ohne ihn
     werden POST/PUT/PATCH/DELETE mit `403` abgelehnt.
   * **Endpunkte**: `/api/v1/system/info`, `/api/v1/system/standby`,
-    `/api/v1/channels` (geblättert über `next_cursor`, `bouquet=<nr>`),
+    `/api/v1/channels` (geblättert über `next_cursor`, `bouquet=<nr>`, `mode=tv|radio`),
     `/api/v1/channels/current`, `/api/v1/bouquets`,
     `/api/v1/epg/grid?bouquet=&from=&to=`, `/api/v1/timers` (GET/POST),
     `/api/v1/recordings`, `/api/v1/settings/recording`,
@@ -168,6 +168,11 @@ Im Profil wählbar (`Profildaten\API-Version`, „Alte…/Neue…“):
   * **Umsetzung der Unterschiede** zur alten API: Senderliste und EPG kommen aus
     zwei Aufrufen (die Sendungen des Bouquets werden über `epg/grid` geholt und
     auf die Sender verteilt – erste = laufende bzw. nächste, zweite = folgende);
+    Ein Bouquet hat eine Fernseh- und eine Radio-Hälfte; `/api/v1/channels`
+    liefert ohne `mode` nur die Fernseh-Hälfte. TC.TV lädt bei leerer
+    Fernsehliste automatisch die Radio-Hälfte nach (alte API: `mode=RADIO`),
+    damit reine Radio-Bouquets nicht als „offline“ erscheinen.
+
     Timer werden in **Unix-Sekunden** angelegt (`kind`); der Zap (`POST /api/v1/zap`)
     sendet `wake:false`, damit eine Box im Standby beim Streamen nicht geweckt wird
     (die Live-Adresse liefert `GET /api/v1/stream/{id}`); die Sender des laufenden
@@ -421,9 +426,9 @@ braucht:
 | `GET /api/v1/system/info` | `{"box":{…},"api":{…}}` | Verbindungstest |
 | `GET /api/v1/system/standby` | `{"on":true\|false}` | Standby-Erkennung |
 | `POST /api/v1/system/standby` | `{"on":true\|false}` im Body, Systemrechte | Standby schalten (CEC kennt die neue API nicht) |
-| `GET /api/v1/channels?bouquet=&limit=&cursor=` | `{"items":[…],"next_cursor":"…"}` | blättert über `next_cursor` (Grenzen: 500/Seite) |
+| `GET /api/v1/channels?bouquet=&mode=&limit=&cursor=` | `{"items":[…],"next_cursor":"…"}` | blättert über `next_cursor` (Grenzen: 500/Seite); `mode=tv\|radio` wählt die Hälfte, ohne Angabe = TV |
 | `GET /api/v1/channels/current` | `{"id":…,"name":…,"kind":"tv\|radio\|webtv\|webradio"}` | Modus-Erkennung, aktueller Sender/Transponder |
-| `GET /api/v1/bouquets` | `{"items":[{"id":…,"name":…,"hidden":…,"locked":…,"tv_count":…}]}` | Bouquet-Auswahl (Nummer = `id`) |
+| `GET /api/v1/bouquets` | `{"items":[{"id":…,"name":…,"hidden":…,"locked":…,"tv_count":…,"radio_count":…}]}` | Bouquet-Auswahl (Nummer = `id`) |
 | `GET /api/v1/epg/grid?bouquet=&from=&to=&cursor=` | `{"items":[{"channel_id":…,"events":[{"id","title","description","start","duration"}]}],"next_cursor":…}` | Sendungen je Sender; daraus erste (laufende bzw. nächste) und zweite |
 | `GET /api/v1/timers` | `{"items":[{"id","kind","channel_id","start","stop","title","state",…}]}` | Timerliste (Sendernamen aus der Senderliste) |
 | `POST /api/v1/timers` | `{"id":…}` (201), `kind` = `record` | Timer anlegen, Zeiten als **Unix-Sekunden** |

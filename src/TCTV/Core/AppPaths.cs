@@ -126,8 +126,6 @@ public static class AppPaths
         return true;
     }
 
-    public static string Temp(string fileName) => Path.Combine(TempDir, fileName);
-
     public static string Logos(string fileName) => Path.Combine(LogosDir, fileName);
 
     /// <summary>

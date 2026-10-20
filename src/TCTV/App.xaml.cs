@@ -46,21 +46,6 @@ public partial class App : Application
             return;
         }
 
-        try
-        {
-            ResourceProvider.ExtractToTemp();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                "Die eingebetteten Ressourcen konnten nicht entpackt werden." + Environment.NewLine + ex.Message,
-                "TC.TV",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-            Shutdown();
-            return;
-        }
-
         Session = AppSession.Create();
 
         // Farbsystem aus dem gewählten Theme ableiten (Brush.*-Ressourcen).

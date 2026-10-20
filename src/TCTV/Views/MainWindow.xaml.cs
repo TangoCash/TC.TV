@@ -357,11 +357,16 @@ public partial class MainWindow : Window
     {
         try
         {
+            // Tray-Icon = EXE-Icon (Assets\sTV.ico, per <ApplicationIcon> eingebettet).
+            string? exe = Environment.ProcessPath;
+            System.Drawing.Icon? icon = string.IsNullOrEmpty(exe)
+                ? null
+                : System.Drawing.Icon.ExtractAssociatedIcon(exe);
             _tray = new Forms.NotifyIcon
             {
                 Text = "TC.TV",
                 Visible = true,
-                Icon = new System.Drawing.Icon(AppPaths.Temp("sTV.ico")),
+                Icon = icon,
             };
         }
         catch (Exception ex) when (ex is ArgumentException or IOException)

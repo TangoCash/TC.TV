@@ -59,7 +59,7 @@
                             <!-- linke Spalte -->
                             <StackPanel Grid.Column="0">
                                 <StackPanel>
-                                    <TextBlock Text="IP / DynDNS" Style="{StaticResource FieldLabel}" />
+                                    <TextBlock x:Name="LabelHost" Style="{StaticResource FieldLabel}" />
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -71,12 +71,12 @@
                                 </StackPanel>
 
                                 <StackPanel Margin="0,12,0,0">
-                                    <TextBlock Text="Webserver Port" Style="{StaticResource FieldLabel}" />
+                                    <TextBlock x:Name="LabelWebPort" Style="{StaticResource FieldLabel}" />
                                     <TextBox x:Name="WebPortBox" Style="{StaticResource InputBox}" />
                                 </StackPanel>
 
                                 <StackPanel Margin="0,12,0,0">
-                                    <TextBlock Text="Streaming Port" Style="{StaticResource FieldLabel}" />
+                                    <TextBlock x:Name="LabelStreamPort" Style="{StaticResource FieldLabel}" />
                                     <TextBox x:Name="StreamPortBox" Style="{StaticResource InputBox}" />
                                 </StackPanel>
 

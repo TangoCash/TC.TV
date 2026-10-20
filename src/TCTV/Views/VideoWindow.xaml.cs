@@ -98,8 +98,8 @@ public partial class VideoWindow : Window
     private void ApplyLocalization()
     {
         Title = Localization.T("video");
-        RecordingsButton.Content = "Aufnahmen";
-        MoviesButton.Content = "Videos";
+        RecordingsButton.Content = Localization.T("recordings");
+        MoviesButton.Content = Localization.T("videos");
         UpButton.Content = Localization.T("back");
         RefreshButton.Content = Localization.T("refresh_epg");
         PlayButton.Content = Localization.T("play");
@@ -111,7 +111,7 @@ public partial class VideoWindow : Window
     /// <summary>Lädt die Wurzelverzeichnisse (/control/getdir).</summary>
     private async Task LoadRootsAsync()
     {
-        PathText.Text = _root == "moviedir" ? "Videos" : "Aufnahmen";
+        PathText.Text = Localization.T(_root == "moviedir" ? "videos" : "recordings");
         _roots = await _session.Client.GetVideoRootsAsync(_root, _cts.Token);
         _path = string.Empty;
 

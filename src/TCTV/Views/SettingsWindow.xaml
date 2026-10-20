@@ -59,12 +59,12 @@
                             <TextBlock x:Name="LabelLanguage" TextWrapping="Wrap" Grid.Row="0" Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center" />
                             <ComboBox x:Name="LanguageCombo" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource ModernCombo}" />
 
-                            <TextBlock x:Name="LabelTheme" TextWrapping="Wrap" Grid.Row="1" Grid.Column="0" Text="Theme" Margin="0,0,10,0" VerticalAlignment="Center" />
+                            <TextBlock x:Name="LabelTheme" TextWrapping="Wrap" Grid.Row="1" Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center" />
                             <ComboBox x:Name="ThemeCombo" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource ModernCombo}">
-                                <ComboBoxItem Content="Dark orange (Standard)" />
-                                <ComboBoxItem Content="Dark grün" />
-                                <ComboBoxItem Content="Hell" />
-                                <ComboBoxItem Content="TC.TV Overlay (dunkel, transparent)" />
+                                <ComboBoxItem />
+                                <ComboBoxItem />
+                                <ComboBoxItem />
+                                <ComboBoxItem />
                             </ComboBox>
 
                             <TextBlock x:Name="LabelVlcPath" TextWrapping="Wrap" Grid.Row="2" Grid.Column="0" Text="VLC Player" Margin="0,0,10,0" VerticalAlignment="Center" />
@@ -127,15 +127,15 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <CheckBox x:Name="VideoOnTopBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="Vordergrund" Margin="0,2,0,6" />
-                            <CheckBox x:Name="NotificationBox" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Content="Hinweis" Margin="0,2,0,6" />
-                            <CheckBox x:Name="FixedSizeBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Content="Fenstergröße fest" Margin="0,2,0,6" />
-                            <CheckBox x:Name="MinimizedBox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Content="Minimiert" Margin="0,2,0,6" />
-                            <CheckBox x:Name="TitleShowBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Content="Videotitelentfernung" Margin="0,2,0,6" />
-                            <CheckBox x:Name="MinimalViewBox" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Content="Minimalansicht" Margin="0,2,0,6" />
-                            <CheckBox x:Name="DeinterlaceBox" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Content="Deinterlace" Margin="0,2,0,6" />
-                            <CheckBox x:Name="LegacyVlcBox" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Content="086i (ältere VLC-Versionen)" Margin="0,2,0,6" />
-                            <CheckBox x:Name="KeepVlcBox" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" Content="VLC erhalten beim Zap" Margin="0,2,0,6" />
+                            <CheckBox x:Name="VideoOnTopBox" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="NotificationBox" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="FixedSizeBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="MinimizedBox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="TitleShowBox" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="MinimalViewBox" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="DeinterlaceBox" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="LegacyVlcBox" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
+                            <CheckBox x:Name="KeepVlcBox" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,6" />
                             <CheckBox x:Name="CloseVlcBox" Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,2,0,2" />
                         </Grid>
                     </StackPanel>

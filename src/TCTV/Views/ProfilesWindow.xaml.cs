@@ -27,7 +27,7 @@ public partial class ProfilesWindow : Window
         LabelWebUser.Text = Localization.T("web_user");
         LabelWebPassword.Text = Localization.T("web_password");
         ExternalBox.Content = Localization.T("external");
-        WebAuthBox.Content = "Web-Authentifikation";
+        WebAuthBox.Content = Localization.T("web_auth");
         ForceSwitchBox.Content = Localization.T("force_switch");
         FavoritesBox.Content = Localization.T("show_only_favorites");
         MultiTunerBox.Content = Localization.T("multituner");
@@ -39,10 +39,12 @@ public partial class ProfilesWindow : Window
         ImportButton.Content = Localization.T("import");
         CloseButton.Content = Localization.T("back");
 
+        LabelHost.Text = Localization.T("ip_dyndns");
+        LabelWebPort.Text = Localization.T("web_port");
+        LabelStreamPort.Text = Localization.T("streaming_port");
+
         LabelApi.Text = "API";
-        ApiBox.ToolTip = "Alte API (/control/) = Originalprogramm; "
-            + "Neue API (/api/v1/) = REST-Schnittstelle des NI-Images (Schreiben braucht "
-            + "Benutzer/Passwort).";
+        ApiBox.ToolTip = Localization.T("api_tooltip");
         ApiBox.Items.Clear();
         ApiBox.Items.Add(BoxApis.DisplayName(BoxApi.Legacy));
         ApiBox.Items.Add(BoxApis.DisplayName(BoxApi.V1));
@@ -199,7 +201,7 @@ public partial class ProfilesWindow : Window
         SaveFileDialog dialog = new()
         {
             FileName = name + ProfileStore.Extension,
-            Filter = "Profil (*.conf3)|*.conf3",
+            Filter = Localization.T("profile_filter") + "|*.conf3",
         };
 
         if (dialog.ShowDialog(this) == true)
@@ -220,7 +222,7 @@ public partial class ProfilesWindow : Window
     {
         OpenFileDialog dialog = new()
         {
-            Filter = "Profil (*.conf3)|*.conf3",
+            Filter = Localization.T("profile_filter") + "|*.conf3",
         };
 
         if (dialog.ShowDialog(this) != true)

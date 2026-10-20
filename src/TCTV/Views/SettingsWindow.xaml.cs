@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 using TCTV.Core;
 using Localization = TCTV.Core.Localization;
@@ -36,6 +37,19 @@ public partial class SettingsWindow : Window
         SaveButton.Content = Localization.T("save");
         CancelButton.Content = Localization.T("cancel");
         LabelVlcPath.Text = "VLC Player";
+        LabelTheme.Text = Localization.T("theme");
+        ApplyThemeNames();
+
+        VideoOnTopBox.Content = Localization.T("vlc_on_top");
+        NotificationBox.Content = Localization.T("vlc_notification");
+        FixedSizeBox.Content = Localization.T("vlc_fixed_size");
+        MinimizedBox.Content = Localization.T("vlc_minimized");
+        TitleShowBox.Content = Localization.T("vlc_no_title");
+        MinimalViewBox.Content = Localization.T("vlc_minimal_view");
+        DeinterlaceBox.Content = Localization.T("vlc_deinterlace");
+        LegacyVlcBox.Content = Localization.T("vlc_legacy");
+        KeepVlcBox.Content = Localization.T("vlc_keep_on_zap");
+
         UpdateCheckBox.Content = Localization.T("update_check");
         UpdateCheckBox.ToolTip = Localization.T("update_check_tooltip");
         CheckUpdatesButton.Content = Localization.T("check_now");
@@ -44,6 +58,21 @@ public partial class SettingsWindow : Window
 
     /// <summary>Reihenfolge der Themen im Auswahlfeld (Dark orange ist Standard).</summary>
     private static readonly string[] ThemeValues = { "3", "2", "4", "1" };
+
+    /// <summary>Übersetzte Beschriftungen der Themen (gleiche Reihenfolge wie ThemeValues).</summary>
+    private static readonly string[] ThemeKeys = { "theme_dark_orange", "theme_dark_green", "theme_light", "theme_overlay" };
+
+    /// <summary>Setzt die Beschriftungen der Themen im Auswahlfeld.</summary>
+    private void ApplyThemeNames()
+    {
+        for (int i = 0; i < ThemeCombo.Items.Count && i < ThemeKeys.Length; i++)
+        {
+            if (ThemeCombo.Items[i] is ComboBoxItem item)
+            {
+                item.Content = Localization.T(ThemeKeys[i]);
+            }
+        }
+    }
 
     private void LoadValues()
     {

@@ -52,5 +52,5 @@ public static class BoxApis
 
     /// <summary>Bezeichnung für die Oberfläche (wie im Profilfenster).</summary>
     public static string DisplayName(BoxApi api)
-        => api == BoxApi.V1 ? "Neue API (/api/v1/)" : "Alte API (/control/)";
+        => Localization.T(api == BoxApi.V1 ? "api_new" : "api_old");
 }

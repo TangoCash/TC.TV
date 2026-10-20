@@ -682,9 +682,11 @@ public partial class MainWindow : Window
         StatusText.Text = StatusLine(text, profile.Name);
 
         // Kurzinfo am Statuspunkt: welches Profil, welche Adresse, welche Schnittstelle.
-        StatusText.ToolTip = "Profil: " + (profile.Name.Length == 0 ? "-" : profile.Name)
-            + "\nBox:    " + profile.Host + ":" + profile.WebPort
-            + "\nAPI:    " + BoxApis.DisplayName(profile.ApiVersion);
+        StatusText.ToolTip = string.Format(
+            Localization.T("status_tooltip"),
+            profile.Name.Length == 0 ? "-" : profile.Name,
+            profile.Host + ":" + profile.WebPort,
+            BoxApis.DisplayName(profile.ApiVersion));
 
         string key = connected switch
         {

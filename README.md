@@ -44,17 +44,15 @@ Profilfenster anpassen (Host, Webport, Streamingport, API-Version).
 ```powershell
 # EINE Datei, ~1 MB, braucht .NET-Desktop-Runtime 8+ (rollForward: Major)
 powershell -File tools/publish-singlefile.ps1                     # dist\TC.TV.exe (x64)
-powershell -File tools/publish-singlefile.ps1 -Architecture x86   # dist\x86\TC.TV.exe
 
 # EINE Datei, ~70 MB, self-contained (kein .NET nötig)
 powershell -File tools/publish-singlefile.ps1 -Variant Standalone  # dist\standalone\TC.TV.exe
-powershell -File tools/publish-singlefile.ps1 -Variant Standalone -Architecture x86
 ```
 
 | Variante | Ergebnis | Voraussetzung auf dem Zielrechner |
 |---|---|---|
-| SingleFile | `dist\TC.TV.exe` (x64) bzw. `dist\x86\TC.TV.exe` | .NET-Desktop-Runtime 8+ |
-| Standalone | `dist\standalone\TC.TV.exe` (x64/x86) | keine (.NET eingebettet) |
+| SingleFile | `dist\TC.TV.exe` (x64) | .NET-Desktop-Runtime 8+ |
+| Standalone | `dist\standalone\TC.TV.exe` (x64) | keine (.NET eingebettet) |
 
 ---
 

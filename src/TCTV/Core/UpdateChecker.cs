@@ -1,5 +1,4 @@
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -20,7 +19,7 @@ public sealed class UpdateInfo
     /// <summary>Release-Notizen (Markdown, kann leer sein).</summary>
     public required string Changelog { get; init; }
 
-    /// <summary>Download-Anhänge des Releases (die vier EXE-Varianten).</summary>
+    /// <summary>Download-Anhänge des Releases (die beiden EXE-Varianten).</summary>
     public required IReadOnlyList<ReleaseAsset> Assets { get; init; }
 
     /// <summary>true, wenn das Release neuer als die installierte Version ist.</summary>
@@ -175,17 +174,14 @@ public static class UpdateChecker
            && element.ValueKind is JsonValueKind.True or JsonValueKind.False
            && element.GetBoolean();
 
-    /// <summary>Wählt den zur laufenden Instanz passenden Download (Architektur + Variante).</summary>
+    /// <summary>Wählt den zur laufenden Instanz passenden Download (x64, SingleFile/Standalone).</summary>
     public static ReleaseAsset? SelectAsset(UpdateInfo update)
-        => SelectAsset(
-            update,
-            RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "x86" : "x64",
-            IsSelfContained());
+        => SelectAsset(update, IsSelfContained());
 
-    /// <summary>Varianten-Auswahl mit expliziten Werten (für den Selbsttest).</summary>
-    internal static ReleaseAsset? SelectAsset(UpdateInfo update, string architecture, bool standalone)
+    /// <summary>Varianten-Auswahl (immer x64) mit explizitem Wert für den Selbsttest.</summary>
+    internal static ReleaseAsset? SelectAsset(UpdateInfo update, bool standalone)
     {
-        string wanted = $"TC.TV-win-{architecture}{(standalone ? "-standalone" : "")}.exe";
+        string wanted = $"TC.TV-win-x64{(standalone ? "-standalone" : "")}.exe";
         foreach (ReleaseAsset asset in update.Assets)
         {
             if (string.Equals(asset.Name, wanted, StringComparison.OrdinalIgnoreCase))

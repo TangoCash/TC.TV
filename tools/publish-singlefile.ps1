@@ -13,10 +13,9 @@
 # Aufruf:
 #   powershell -File tools\publish-singlefile.ps1                       # eine Datei
 #   powershell -File tools\publish-singlefile.ps1 -Variant Standalone   # ohne .NET
-#   jeweils optional -Architecture x86
 #   optional -Version <x.y.z> setzt die Assembly-Version (im CI aus dem Tag).
 param(
-    [ValidateSet('x64', 'x86')]
+    [ValidateSet('x64')]
     [string]$Architecture = 'x64',
 
     [ValidateSet('SingleFile', 'Standalone')]
@@ -49,7 +48,6 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish ist fehlgeschlagen (ExitCode $L
 # zu den anderen Architektur-/Varianten-Ausgaben und werden nicht mitgezaehlt.
 $dist = Join-Path $repo 'dist'
 if ($Variant -eq 'Standalone') { $dist = Join-Path $dist 'standalone' }
-if ($Architecture -eq 'x86') { $dist = Join-Path $dist 'x86' }
 $files = Get-ChildItem $dist -File
 
 Write-Output ""

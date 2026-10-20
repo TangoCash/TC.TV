@@ -1095,29 +1095,29 @@ else {
             {"tag_name":"v0.4","html_url":"https://github.com/TangoCash/TC.TV/releases/tag/v0.4","draft":false,"prerelease":false,
              "assets":[
                {"name":"TC.TV-win-x64.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x64.exe","size":942161,"digest":"sha256:aaaa"},
-               {"name":"TC.TV-win-x86.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x86.exe","size":943697,"digest":"sha256:bbbb"},
-               {"name":"TC.TV-win-x64-standalone.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x64-standalone.exe","size":71985085,"digest":"sha256:cccc"},
-               {"name":"TC.TV-win-x86-standalone.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x86-standalone.exe","size":66396420,"digest":"sha256:dddd"}
+               {"name":"TC.TV-win-x64-standalone.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-x64-standalone.exe","size":71985085,"digest":"sha256:cccc"}
              ]}
             """;
 
         UpdateInfo? withAssets = UpdateChecker.ParseRelease(assetsJson, new Version(0, 3, 0, 0));
         Expect("Update: Anhänge werden gelesen",
-            withAssets is not null && withAssets.Assets.Count == 4, withAssets?.Assets.Count.ToString() ?? "null");
+            withAssets is not null && withAssets.Assets.Count == 2, withAssets?.Assets.Count.ToString() ?? "null");
 
         string? firstSha = withAssets is not null && withAssets.Assets.Count > 0 ? withAssets.Assets[0].Sha256 : null;
         Expect("Update: Prüfsumme ohne sha256:-Präfix", firstSha == "aaaa", firstSha ?? "null");
 
         Expect("Update: x64 SingleFile wird gewählt",
-            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x64", false)?.Name == "TC.TV-win-x64.exe");
-        Expect("Update: x86 SingleFile wird gewählt",
-            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x86", false)?.Name == "TC.TV-win-x86.exe");
+            withAssets is not null && UpdateChecker.SelectAsset(withAssets, false)?.Name == "TC.TV-win-x64.exe");
         Expect("Update: x64 Standalone wird gewählt",
-            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x64", true)?.Name == "TC.TV-win-x64-standalone.exe");
-        Expect("Update: x86 Standalone wird gewählt",
-            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "x86", true)?.Name == "TC.TV-win-x86-standalone.exe");
-        Expect("Update: unbekannte Architektur ergibt null",
-            withAssets is not null && UpdateChecker.SelectAsset(withAssets, "arm64", false) is null);
+            withAssets is not null && UpdateChecker.SelectAsset(withAssets, true)?.Name == "TC.TV-win-x64-standalone.exe");
+
+        const string noX64Json = """
+            {"tag_name":"v0.4","html_url":"https://github.com/TangoCash/TC.TV/releases/tag/v0.4","draft":false,"prerelease":false,
+             "assets":[{"name":"TC.TV-win-arm64.exe","browser_download_url":"https://github.com/TangoCash/TC.TV/releases/download/v0.4/TC.TV-win-arm64.exe","size":1,"digest":"sha256:eeee"}]}
+            """;
+        UpdateInfo? noX64 = UpdateChecker.ParseRelease(noX64Json, new Version(0, 3, 0, 0));
+        Expect("Update: kein passender x64-Anhang ergibt null",
+            noX64 is not null && UpdateChecker.SelectAsset(noX64, false) is null);
     }
 
     /// <summary>

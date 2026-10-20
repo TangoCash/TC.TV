@@ -138,6 +138,7 @@ public partial class MainWindow : Window
     private Forms.NotifyIcon? _tray;
     private List<Channel> _channels = new();
     private Channel? _selected;
+    private int _epgLoadVersion;
     private bool _suppressBouquetChange;
     private bool _fadePinned;
     private bool _compact;
@@ -727,6 +728,7 @@ public partial class MainWindow : Window
     {
         _selected = (ChannelList.SelectedItem as ChannelItem)?.Channel;
         UpdateDetails();
+        _ = LoadEventDescriptionAsync();
     }
 
     private void UpdateDetails()
@@ -739,10 +741,18 @@ public partial class MainWindow : Window
 
         EpgEvent first = _selected.FirstEpg;
         DetailTitle.Text = _selected.Name;
+
+        // Kopfzeile: Startzeit, Dauer, Titel (Info1) und Kurztext (Info2).
         DetailInfo.Text = first.IsEmpty
             ? Localization.T(2)
             : (first.StartTime + "   " + first.TimeTotal + " " + Localization.T(29) + Environment.NewLine +
-               first.Header + Environment.NewLine + first.Description).Trim();
+               first.Header).Trim();
+
+        // Ausführliche Beschreibung der Sendung. Die alte API liefert sie bereits im
+        // Bouquet mit; die neue API lädt sie gesondert nach (LoadEventDescriptionAsync).
+        DetailDescription.Text = _session.Client.ApiVersion == BoxApi.Legacy && !first.IsEmpty
+            ? first.Description
+            : string.Empty;
 
         EpgEvent next = _selected.SecondEpg;
         DetailNext.Text = next.IsEmpty
@@ -751,6 +761,57 @@ public partial class MainWindow : Window
         DetailSeparator.Visibility = next.IsEmpty ? Visibility.Collapsed : Visibility.Visible;
 
         DetailCard.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Lädt die ausführliche Beschreibung der aktuellen Sendung nach (neue API:
+    /// GET /api/v1/epg/event). Antworten einer zwischenzeitlich geänderten Auswahl
+    /// werden verworfen.
+    /// </summary>
+    private async Task LoadEventDescriptionAsync()
+    {
+        if (_session.Client.ApiVersion != BoxApi.V1)
+        {
+            return;
+        }
+
+        Channel? channel = _selected;
+        if (channel is null)
+        {
+            return;
+        }
+
+        EpgEvent first = channel.FirstEpg;
+        if (first.IsEmpty || string.IsNullOrEmpty(first.EventId) || first.StartUnix <= 0)
+        {
+            return;
+        }
+
+        int version = ++_epgLoadVersion;
+        try
+        {
+            // Kurz warten, damit schnelles Durchschalten nicht jede Zwischenstation lädt.
+            await Task.Delay(200, _cts.Token);
+            if (version != _epgLoadVersion)
+            {
+                return;
+            }
+
+            string? longDescription = await _session.Client.GetEventLongDescriptionAsync(
+                first.EventId, first.StartUnix, _cts.Token);
+            if (version != _epgLoadVersion)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(longDescription))
+            {
+                DetailDescription.Text = longDescription;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     /// <summary>Blendet den Hinweis im leeren Senderbereich ein bzw. aus.</summary>
@@ -790,12 +851,29 @@ public partial class MainWindow : Window
         try
         {
             List<EpgEvent> events = await _session.Client.GetChannelEpgAsync(channel.Id, bouquet, _cts.Token);
+            events = EpgWindow.FilterUpcoming(events);
             EpgWindow window = new(channel.Id, channel.Name, events) { Owner = this };
+            PositionEpgWindow(window);
             window.ShowDialog();
         }
         catch (OperationCanceledException)
         {
         }
+    }
+
+    /// <summary>
+    /// Gibt dem EPG-Fenster dieselbe Größe wie dem Hauptfenster und dockt es
+    /// direkt daneben – auf der dem Bildschirmrand abgewandten Seite.
+    /// </summary>
+    private void PositionEpgWindow(EpgWindow window)
+    {
+        Rect area = SystemParameters.WorkArea;
+        window.Width = Width;
+        window.Height = Height;
+        window.Top = Top;
+        window.Left = _session.Settings.RightEdge
+            ? area.Right - Width * 2
+            : area.Left + Width;
     }
 
     private async void OnStream(object sender, RoutedEventArgs e) => await StreamSelectedAsync();

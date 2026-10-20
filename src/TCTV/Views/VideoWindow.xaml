@@ -19,6 +19,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Kopf mit Pfadanzeige -->
@@ -53,6 +54,7 @@
             <ListBox x:Name="EntryList"
                      Style="{StaticResource ModernList}"
                      ItemContainerStyle="{StaticResource ModernListItem}"
+                     SelectionChanged="OnEntrySelected"
                      MouseDoubleClick="OnEntryActivated">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
@@ -96,7 +98,18 @@
             </ListBox>
         </Border>
 
-        <WrapPanel Grid.Row="3" Margin="0,12,0,0">
+        <!-- Beschreibung der markierten Aufnahme -->
+        <Border x:Name="DetailCard" Grid.Row="3" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock x:Name="DetailTitle" Style="{StaticResource H2}" TextWrapping="Wrap" />
+                <TextBlock x:Name="DetailInfo" Margin="0,4,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                <ScrollViewer Margin="0,4,0,0" MaxHeight="90" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="DetailDescription" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                </ScrollViewer>
+            </StackPanel>
+        </Border>
+
+        <WrapPanel Grid.Row="4" Margin="0,12,0,0">
             <Button x:Name="UpButton" Margin="0,0,6,0" Click="OnUp" />
             <Button x:Name="RefreshButton" Margin="0,0,6,0" Click="OnRefresh" />
             <Button x:Name="PlayButton" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" Click="OnPlay" />

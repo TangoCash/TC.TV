@@ -12,6 +12,7 @@ namespace TCTV;
 public partial class App : Application
 {
     private Mutex? _instanceMutex;
+    private bool _ownsInstanceMutex;
 
     /// <summary>Zentrale Laufzeitdaten (Ersatz der globalen AutoIt-Variablen).</summary>
     public static AppSession Session { get; private set; } = null!;
@@ -23,6 +24,7 @@ public partial class App : Application
         // Einzelinstanz - im Original über _yw("S.TV.exe", 1); dort läuft die
         // AutoIt-Fassung, hier die Portierung unter eigenem Namen.
         _instanceMutex = new Mutex(initiallyOwned: true, @"Local\TC.TV.Net", out bool createdNew);
+        _ownsInstanceMutex = createdNew;
         if (!createdNew)
         {
             Shutdown();
@@ -101,7 +103,19 @@ public partial class App : Application
             VlcLauncher.Shutdown();
         }
 
-        _instanceMutex?.ReleaseMutex();
+        if (_ownsInstanceMutex)
+        {
+            try
+            {
+                _instanceMutex?.ReleaseMutex();
+            }
+            catch (System.ApplicationException)
+            {
+                // Mutex gehörte diesem Thread nicht (z. B. weil eine zweite Instanz
+                // sofort wieder beendet wurde) – nichts freizugeben.
+            }
+        }
+
         _instanceMutex?.Dispose();
         base.OnExit(e);
     }
@@ -1009,6 +1023,33 @@ else {
         Expect("neue API: Webradio wird ebenfalls als Radio erkannt",
             NeutrinoV1Api.ParseChannels("{\"items\":[{\"id\":\"abc\",\"number\":1,\"name\":\"Webradio\",\"kind\":\"webradio\"}]}")
                 .FirstOrDefault()?.IsRadio == true);
+
+        long epgNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        List<EpgEvent> epgMixed = new()
+        {
+            new EpgEvent { StartUnix = epgNow - 7200, DurationSeconds = 1800 }, // vor 2 h, beendet
+            new EpgEvent { StartUnix = epgNow - 1800, DurationSeconds = 3600 }, // läuft noch
+            new EpgEvent { StartUnix = epgNow + 900, DurationSeconds = 1800 },  // Zukunft
+        };
+        List<EpgEvent> epgUpcoming = EpgWindow.FilterUpcoming(epgMixed);
+        Expect("EPG: vergangene Sendungen werden ausgeblendet",
+            epgUpcoming.Count == 2
+            && epgUpcoming[0].StartUnix == epgNow - 1800
+            && epgUpcoming[1].StartUnix == epgNow + 900,
+            "Anzahl=" + epgUpcoming.Count);
+
+        Expect("Aufnahme: .xml-Datei liegt neben der Aufnahme",
+            RecordingInfo.SidecarPathOf("/media/hdd/movie/Tagesschau.ts") == "/media/hdd/movie/Tagesschau.xml",
+            RecordingInfo.SidecarPathOf("/media/hdd/movie/Tagesschau.ts"));
+        RecordingInfo recordingInfo = RecordingInfo.Parse(
+            "<neutrino><record><channelname>Das Erste HD</channelname><epgtitle>Tagesschau</epgtitle>"
+            + "<info1>Nachrichten</info1><info2>Die Themen des Tages</info2></record></neutrino>");
+        Expect("Aufnahme: Metadaten werden aus der .xml gelesen",
+            recordingInfo.Title == "Tagesschau"
+            && recordingInfo.ChannelName == "Das Erste HD"
+            && recordingInfo.Info1 == "Nachrichten"
+            && recordingInfo.Description == "Die Themen des Tages",
+            recordingInfo.Title);
     }
 
     /// <summary>Prüft Versionsvergleich und Release-Auswertung der Updateprüfung.</summary>

@@ -413,6 +413,36 @@ public sealed class NeutrinoV1Api : BoxApiClient
     }
 
     /// <summary>
+    /// Ausführliche Beschreibung einer Sendung (GET /api/v1/epg/event?id=&start=).
+    /// Liefert null, wenn die Box keine Beschreibung kennt oder der Aufruf fehlschlägt.
+    /// </summary>
+    public override async Task<string?> GetEventLongDescriptionAsync(string eventId, long startUnix, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(eventId) || startUnix <= 0)
+        {
+            return null;
+        }
+
+        string path = Prefix + "/epg/event?id=" + Uri.EscapeDataString(eventId)
+            + "&start=" + startUnix.ToString(CultureInfo.InvariantCulture);
+        using JsonDocument? document = await RequestJsonAsync(
+            HttpMethod.Get, path, null, withSession: false, cancellationToken).ConfigureAwait(false);
+
+        if (document is null)
+        {
+            return null;
+        }
+
+        string longDescription = JsonText(document.RootElement, "long_description");
+        if (longDescription.Length == 0)
+        {
+            longDescription = JsonText(document.RootElement, "description");
+        }
+
+        return longDescription.Length == 0 ? null : longDescription;
+    }
+
+    /// <summary>
     /// Sender eines Bouquets; blättert über <c>next_cursor</c>. <paramref name="mode"/>
     /// ist "tv" (Vorgabe, wenn null), "radio" oder null.
     /// </summary>
@@ -1222,6 +1252,38 @@ public sealed class NeutrinoV1Api : BoxApiClient
         string url = BuildHttpFileUrl(absolutePath);
         string token = await GetMediaTokenAsync(cancellationToken).ConfigureAwait(false);
         return token.Length == 0 ? url : url + "&token=" + Uri.EscapeDataString(token);
+    }
+
+    /// <summary>
+    /// Metadaten einer Aufnahme: die .xml-Datei neben der Aufnahme wird über die
+    /// Datei-Route der Box (mit Medien-Token) geladen und ausgewertet.
+    /// </summary>
+    public override async Task<RecordingInfo?> GetRecordingInfoAsync(string absolutePath, CancellationToken cancellationToken = default)
+    {
+        string sidecar = RecordingInfo.SidecarPathOf(absolutePath);
+        string url = await GetFileUrlAsync(sidecar, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrEmpty(url))
+        {
+            return null;
+        }
+
+        try
+        {
+            using HttpResponseMessage response = await _http
+                .GetAsync(url, HttpCompletionOption.ResponseContentRead, cancellationToken)
+                .ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            return RecordingInfo.Parse(DecodeText(bytes));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UriFormatException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private async Task<string> GetMediaTokenAsync(CancellationToken cancellationToken)

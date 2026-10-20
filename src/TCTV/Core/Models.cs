@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 namespace TCTV.Core;
 
 /// <summary>Ein Bouquet (Sendergruppe), wie von /control/getbouquets geliefert (Zeile "NR NAME").</summary>
@@ -195,6 +197,71 @@ public sealed class EpgChannel
     public string ChannelName { get; init; } = string.Empty;
 
     public List<EpgEvent> Events { get; init; } = new();
+}
+
+/// <summary>
+/// Metadaten einer Aufnahme (Titel, Sender, Beschreibung). Die Box legt sie in
+/// einer .xml-Datei neben der Aufnahme ab (gleicher Name, Endung .xml).
+/// </summary>
+public sealed class RecordingInfo
+{
+    /// <summary>Titel der Sendung (&lt;epgtitle&gt;).</summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Sendername (&lt;channelname&gt;).</summary>
+    public string ChannelName { get; set; } = string.Empty;
+
+    /// <summary>Kurzbeschreibung (&lt;info1&gt;).</summary>
+    public string Info1 { get; set; } = string.Empty;
+
+    /// <summary>Ausführliche Beschreibung (&lt;info2&gt;).</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>true, wenn irgendein Metadatenfeld befüllt ist.</summary>
+    public bool HasContent => Title.Length > 0 || ChannelName.Length > 0
+        || Info1.Length > 0 || Description.Length > 0;
+
+    /// <summary>Pfad der Metadaten-Datei: die Erweiterung wird durch ".xml" ersetzt.</summary>
+    public static string SidecarPathOf(string filePath)
+    {
+        string path = filePath ?? string.Empty;
+        int slash = path.LastIndexOf('/');
+        int dot = path.LastIndexOf('.');
+        if (dot > slash)
+        {
+            path = path[..dot];
+        }
+
+        return path + ".xml";
+    }
+
+    /// <summary>Liest Titel, Sender und Beschreibung aus der .xml-Metadatendatei.</summary>
+    public static RecordingInfo Parse(string xml)
+    {
+        RecordingInfo info = new();
+        if (string.IsNullOrWhiteSpace(xml))
+        {
+            return info;
+        }
+
+        try
+        {
+            XDocument document = XDocument.Parse(xml, LoadOptions.None);
+            info.ChannelName = Tag(document, "channelname");
+            info.Title = Tag(document, "epgtitle");
+            info.Info1 = Tag(document, "info1");
+            info.Description = Tag(document, "info2");
+        }
+        catch (System.Xml.XmlException)
+        {
+            // Keine/defekte Metadaten => leere Beschreibung.
+        }
+
+        return info;
+    }
+
+    private static string Tag(XDocument document, string name)
+        => document.Descendants(name).FirstOrDefault()?.Value ?? string.Empty;
 }
 
 /// <summary>Vom Client benoetigte Serverdaten (Modus/Standby).</summary>

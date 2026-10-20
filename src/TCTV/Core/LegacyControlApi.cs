@@ -407,6 +407,17 @@ public sealed class LegacyControlApi : BoxApiClient
     public override Task<string> GetFileUrlAsync(string absolutePath, CancellationToken cancellationToken = default)
         => Task.FromResult(BuildHttpFileUrl(absolutePath));
 
+    /// <summary>
+    /// Metadaten einer Aufnahme: die .xml-Datei neben der Aufnahme wird direkt vom
+    /// Webserver der Box geladen und ausgewertet.
+    /// </summary>
+    public override async Task<RecordingInfo?> GetRecordingInfoAsync(string absolutePath, CancellationToken cancellationToken = default)
+    {
+        string sidecar = RecordingInfo.SidecarPathOf(absolutePath);
+        string? xml = await GetTextAsync(EscapePath(sidecar), cancellationToken).ConfigureAwait(false);
+        return xml is null ? null : RecordingInfo.Parse(xml);
+    }
+
     /// <summary>Timer als XML (/control/timer?format=xml).</summary>
     public override async Task<List<TimerItem>> GetTimersAsync(CancellationToken cancellationToken = default)
     {

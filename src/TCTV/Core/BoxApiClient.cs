@@ -88,6 +88,14 @@ public abstract class BoxApiClient : IDisposable
     /// <summary>EPG-Sendungen eines einzelnen Senders (für "weiteres EPG").</summary>
     public abstract Task<List<EpgEvent>> GetChannelEpgAsync(string channelId, string bouquetNumber, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Ausführliche Beschreibung einer Sendung. Nur die neue API kennt sie
+    /// (GET /api/v1/epg/event); die alte API liefert die Beschreibung bereits im
+    /// Bouquet mit und überschreibt die Methode nicht.
+    /// </summary>
+    public virtual Task<string?> GetEventLongDescriptionAsync(string eventId, long startUnix, CancellationToken cancellationToken = default)
+        => Task.FromResult<string?>(null);
+
     /// <summary>Löscht einen Timer der Box.</summary>
     public abstract Task DeleteTimerAsync(string timerId, CancellationToken cancellationToken = default);
 
@@ -112,6 +120,12 @@ public abstract class BoxApiClient : IDisposable
     /// Anmeldung, die neue verlangt einen kurzlebigen Token in der Adresse.
     /// </summary>
     public abstract Task<string> GetFileUrlAsync(string absolutePath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Metadaten einer Aufnahme (Titel, Sender, Beschreibung) aus der .xml-Datei
+    /// neben der Aufnahme; null, wenn es keine gibt.
+    /// </summary>
+    public abstract Task<RecordingInfo?> GetRecordingInfoAsync(string absolutePath, CancellationToken cancellationToken = default);
 
     public abstract Task<List<TimerItem>> GetTimersAsync(CancellationToken cancellationToken = default);
 

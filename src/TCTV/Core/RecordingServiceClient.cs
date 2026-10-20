@@ -69,6 +69,10 @@ public sealed class RecordingServiceClient : IDisposable
     public Task<List<EpgEvent>> GetChannelEpgAsync(string channelId, string bouquetNumber, CancellationToken cancellationToken = default)
         => _api.GetChannelEpgAsync(channelId, bouquetNumber, cancellationToken);
 
+    /// <summary>Ausführliche Beschreibung einer Sendung (nur neue API).</summary>
+    public Task<string?> GetEventLongDescriptionAsync(string eventId, long startUnix, CancellationToken cancellationToken = default)
+        => _api.GetEventLongDescriptionAsync(eventId, startUnix, cancellationToken);
+
     /// <summary>Löscht einen Timer der Box.</summary>
     public Task DeleteTimerAsync(string timerId, CancellationToken cancellationToken = default)
         => _api.DeleteTimerAsync(timerId, cancellationToken);
@@ -114,6 +118,10 @@ public sealed class RecordingServiceClient : IDisposable
     /// <summary>Adresse einer Datei für VLC (die neue API hängt einen Medien-Token an).</summary>
     public Task<string> GetFileUrlAsync(string absolutePath, CancellationToken cancellationToken = default)
         => _api.GetFileUrlAsync(absolutePath, cancellationToken);
+
+    /// <summary>Metadaten einer Aufnahme (Titel, Sender, Beschreibung); null, wenn keine.</summary>
+    public Task<RecordingInfo?> GetRecordingInfoAsync(string absolutePath, CancellationToken cancellationToken = default)
+        => _api.GetRecordingInfoAsync(absolutePath, cancellationToken);
 
     public Task<List<TimerItem>> GetTimersAsync(CancellationToken cancellationToken = default)
         => _api.GetTimersAsync(cancellationToken);

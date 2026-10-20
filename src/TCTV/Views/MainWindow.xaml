@@ -170,9 +170,12 @@
             <Border x:Name="DetailCard" Grid.Row="3" Style="{StaticResource Card}" Margin="0,0,0,10" Visibility="Collapsed">
                 <StackPanel>
                     <TextBlock x:Name="DetailTitle" Style="{StaticResource H2}" />
-                    <TextBlock x:Name="DetailInfo" Margin="0,4,0,0" Style="{StaticResource Muted}" />
+                    <TextBlock x:Name="DetailInfo" Margin="0,4,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                    <ScrollViewer x:Name="DetailDescriptionScroll" Margin="0,4,0,0" MaxHeight="120" VerticalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="DetailDescription" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                    </ScrollViewer>
                     <Border x:Name="DetailSeparator" Height="1" Margin="0,8,0,6" Background="{DynamicResource Brush.Border}" />
-                    <TextBlock x:Name="DetailNext" Style="{StaticResource Muted}" />
+                    <TextBlock x:Name="DetailNext" Style="{StaticResource Muted}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 

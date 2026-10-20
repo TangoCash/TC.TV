@@ -3,10 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="TC.TV"
         Width="560"
-        Height="500"
+        Height="720"
         MinWidth="420"
-        MinHeight="300"
-        WindowStartupLocation="CenterOwner"
+        MinHeight="500"
+        WindowStartupLocation="Manual"
         ShowInTaskbar="False"
         Background="{DynamicResource Brush.Window}"
         FontFamily="Segoe UI"
@@ -17,6 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
@@ -40,6 +41,7 @@
             <ListBox x:Name="EventList"
                      Style="{StaticResource ModernList}"
                      ItemContainerStyle="{StaticResource ModernListItem}"
+                     SelectionChanged="OnEventSelected"
                      PreviewMouseRightButtonDown="OnEventRightClick">
                 <ListBox.ContextMenu>
                     <ContextMenu>
@@ -72,7 +74,20 @@
             </ListBox>
         </Border>
 
-        <WrapPanel Grid.Row="2" Margin="0,12,0,0" HorizontalAlignment="Right">
+        <!-- Detailkarte der markierten Sendung -->
+        <Border x:Name="DetailCard" Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0" Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock x:Name="DetailTitle" Style="{StaticResource H2}" TextWrapping="Wrap" />
+                <TextBlock x:Name="DetailInfo" Margin="0,4,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                <ScrollViewer Margin="0,4,0,0" MaxHeight="90" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="DetailDescription" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                </ScrollViewer>
+                <Border x:Name="DetailSeparator" Height="1" Margin="0,8,0,6" Background="{DynamicResource Brush.Border}" />
+                <TextBlock x:Name="DetailNext" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <WrapPanel Grid.Row="3" Margin="0,12,0,0" HorizontalAlignment="Right">
             <Button x:Name="CloseButton" Width="120" Click="OnClose" />
         </WrapPanel>
     </Grid>

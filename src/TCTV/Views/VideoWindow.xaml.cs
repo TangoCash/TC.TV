@@ -85,6 +85,7 @@ public partial class VideoWindow : Window
 
     /// <summary>Aktueller absoluter Pfad; leer = Wurzelauswahl.</summary>
     private string _path = string.Empty;
+    private int _infoLoadVersion;
 
     public VideoWindow()
     {
@@ -267,4 +268,65 @@ public partial class VideoWindow : Window
     }
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>Zeigt die Beschreibung der markierten Aufnahme in der Detailkarte.</summary>
+    private void OnEntrySelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (EntryList.SelectedItem is not VideoEntry entry || entry.IsDirectory)
+        {
+            DetailCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Bis die Metadaten da sind, erst einmal den Dateinamen zeigen.
+        DetailTitle.Text = entry.Name;
+        DetailInfo.Text = string.Empty;
+        DetailDescription.Text = string.Empty;
+        DetailCard.Visibility = Visibility.Visible;
+
+        _ = LoadRecordingInfoAsync(entry);
+    }
+
+    /// <summary>Lädt die .xml-Metadaten der Aufnahme (Titel, Sender, Beschreibung).</summary>
+    private async Task LoadRecordingInfoAsync(VideoEntry entry)
+    {
+        int version = ++_infoLoadVersion;
+        try
+        {
+            // Kurz warten, damit schnelles Durchschalten nicht jede Aufnahme lädt.
+            await Task.Delay(200, _cts.Token);
+            if (version != _infoLoadVersion)
+            {
+                return;
+            }
+
+            RecordingInfo? info = await _session.Client.GetRecordingInfoAsync(entry.FullPath, _cts.Token);
+            if (version != _infoLoadVersion)
+            {
+                return;
+            }
+
+            if (info is null || !info.HasContent)
+            {
+                DetailTitle.Text = entry.Name;
+                DetailInfo.Text = string.Empty;
+                DetailDescription.Text = string.Empty;
+                return;
+            }
+
+            DetailTitle.Text = info.Title.Length == 0 ? entry.Name : info.Title;
+
+            string line = info.ChannelName;
+            if (info.Info1.Length > 0)
+            {
+                line = line.Length == 0 ? info.Info1 : line + "   ·   " + info.Info1;
+            }
+
+            DetailInfo.Text = line;
+            DetailDescription.Text = info.Description;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
 }

@@ -48,6 +48,7 @@ public partial class EpgWindow : Window
     private readonly AppSession _session = App.Session;
     private readonly CancellationTokenSource _cts = new();
     private readonly string _channelId;
+    private int _detailLoadVersion;
 
     public EpgWindow(string channelId, string channelName, IReadOnlyList<EpgEvent> events)
     {
@@ -69,6 +70,7 @@ public partial class EpgWindow : Window
         else
         {
             EventList.ItemsSource = events.Select(e => new EpgEntry(e)).ToList();
+            EventList.SelectedIndex = 0;
         }
     }
 
@@ -89,6 +91,93 @@ public partial class EpgWindow : Window
     }
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>Zeigt die Details der markierten Sendung in der Detailkarte.</summary>
+    private void OnEventSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (EventList.SelectedItem is not EpgEntry entry || entry.Event.IsEmpty)
+        {
+            DetailCard.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        EpgEvent evt = entry.Event;
+        DetailTitle.Text = entry.Title;
+
+        string info = entry.Start;
+        if (!string.IsNullOrEmpty(entry.Duration))
+        {
+            info += "   " + entry.Duration;
+        }
+
+        if (!string.IsNullOrEmpty(evt.Info2))
+        {
+            info += Environment.NewLine + evt.Info2;
+        }
+
+        DetailInfo.Text = info;
+
+        // Die alte API liefert die Beschreibung bereits mit, die neue API lädt sie nach.
+        DetailDescription.Text = _session.Client.ApiVersion == BoxApi.Legacy ? evt.Description : string.Empty;
+
+        int index = EventList.SelectedIndex;
+        if (index >= 0 && index + 1 < EventList.Items.Count && EventList.Items[index + 1] is EpgEntry next)
+        {
+            DetailNext.Text = (next.Start + "   " + next.Title).Trim();
+            DetailSeparator.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            DetailNext.Text = string.Empty;
+            DetailSeparator.Visibility = Visibility.Collapsed;
+        }
+
+        DetailCard.Visibility = Visibility.Visible;
+        _ = LoadDescriptionAsync(evt);
+    }
+
+    /// <summary>
+    /// Lädt die ausführliche Beschreibung der markierten Sendung nach (neue API).
+    /// Antworten einer zwischenzeitlich geänderten Auswahl werden verworfen.
+    /// </summary>
+    private async Task LoadDescriptionAsync(EpgEvent evt)
+    {
+        if (_session.Client.ApiVersion != BoxApi.V1)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(evt.EventId) || evt.StartUnix <= 0)
+        {
+            return;
+        }
+
+        int version = ++_detailLoadVersion;
+        try
+        {
+            // Kurz warten, damit schnelles Durchklicken nicht jede Sendung lädt.
+            await Task.Delay(200, _cts.Token);
+            if (version != _detailLoadVersion)
+            {
+                return;
+            }
+
+            string? longDescription = await _session.Client.GetEventLongDescriptionAsync(
+                evt.EventId, evt.StartUnix, _cts.Token);
+            if (version != _detailLoadVersion)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(longDescription))
+            {
+                DetailDescription.Text = longDescription;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
 
     /// <summary>Wählt beim Rechtsklick das EPG-Ereignis unter dem Cursor aus.</summary>
     private void OnEventRightClick(object sender, MouseButtonEventArgs e)
@@ -133,6 +222,37 @@ public partial class EpgWindow : Window
         catch (OperationCanceledException)
         {
         }
+    }
+
+    /// <summary>
+    /// Entfernt bereits beendete Sendungen, damit die Liste mit der laufenden
+    /// (bzw. der nächsten) Sendung beginnt. Sendungen ohne bekannten Beginn
+    /// werden beibehalten.
+    /// </summary>
+    public static List<EpgEvent> FilterUpcoming(IEnumerable<EpgEvent> events)
+    {
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        List<EpgEvent> result = new();
+
+        foreach (EpgEvent item in events)
+        {
+            if (item.StartUnix <= 0)
+            {
+                result.Add(item);
+                continue;
+            }
+
+            long end = item.DurationSeconds > 0
+                ? item.StartUnix + item.DurationSeconds
+                : item.StartUnix;
+            if (end > now)
+            {
+                result.Add(item);
+            }
+        }
+
+        result.Sort((left, right) => left.StartUnix.CompareTo(right.StartUnix));
+        return result;
     }
 
     /// <summary>Nur für Selbsttest/--render: ein Fenster mit Beispieldaten.</summary>

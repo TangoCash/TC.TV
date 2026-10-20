@@ -46,7 +46,7 @@ public sealed class AppSession : IDisposable
         Profile profile = profiles.Load(profileName);
         ini.Save();
 
-        Localization.Current = settings.Language;
+        Localization.SetLanguage(settings.Language);
 
         AppSession session = new(ini, settings, profiles, profile)
         {
@@ -93,7 +93,7 @@ public sealed class AppSession : IDisposable
         Settings.AdvancedSettings = loaded.AdvancedSettings;
         Settings.LastBouquetNumber = loaded.LastBouquetNumber;
         Settings.VlcPath = loaded.VlcPath;
-        Localization.Current = Settings.Language;
+        Localization.SetLanguage(Settings.Language);
         VlcOptions = VlcOptions.FromIni(Ini);
     }
 

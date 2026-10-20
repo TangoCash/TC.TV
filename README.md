@@ -67,8 +67,9 @@ Benutzerdaten liegen im **Benutzerprofil**, nicht neben der EXE:
 ├── TC.TV.ini         # Einstellungen
 ├── Box100.conf3      # Empfängerprofile
 ├── Logos\            # Senderlogos
+├── Lang\             # zusätzliche .lang-Sprachdateien
 ├── VLCPortable\      # optionaler portabler VLC
-└── Temp\             # entpackte Ressourcen
+└── Temp\             # Arbeitsdateien
 ```
 
 Portabel/Test: `TC.TV.exe --datadir <Ordner>` oder Umgebungsvariable `TCTV_DATADIR`.
@@ -137,7 +138,7 @@ damit reine Radio-Bouquets nicht „offline“ erscheinen.
 | `src/TCTV/Core/` | Box-Schnittstellen (alt/neu), Konfiguration, VLC, Theming, Localization, Modelle |
 | `src/TCTV/Views/` | Haupt-, Einstellungs-, Profil-, Video-, EPG-, Timer-, Hilfe-Fenster |
 | `src/TCTV/Styles/Controls.xaml` | Style-System |
-| `src/TCTV/Generated/` | erzeugte Sprach- und Ressourcentabellen |
+| `src/TCTV/Languages/` | Sprachdateien (`deutsch.lang`, `english.lang`, …) |
 | `tools/publish-singlefile.ps1` | baut die Einzeldatei-EXE und prüft sie |
 
 ---
@@ -158,3 +159,6 @@ damit reine Radio-Bouquets nicht „offline“ erscheinen.
 - INI und Box-Antworten werden als **UTF-8** gelesen (Rückfall auf Latin-1 bei
   ungültigem UTF-8); geschrieben wird UTF-8 ohne BOM.
 - `Profildaten\API-Version` (`alt`/`neu`): fehlt der Schlüssel, gilt die alte API.
+- **Neue Sprache hinzufügen**: eine Datei `<name>.lang` in den Ordner `Lang\`
+  der Datenablage legen (je Zeile `schlüssel=wert`, `\n` = Zeilenumbruch). Sie
+  erscheint danach in der Sprachauswahl; deutsch/english sind eingebettet.

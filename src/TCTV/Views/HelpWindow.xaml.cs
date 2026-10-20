@@ -20,9 +20,9 @@ public partial class HelpWindow : Window
     public HelpWindow()
     {
         InitializeComponent();
-        TitleText.Text = Localization.T(1);
-        CloseButton.Content = Localization.T(240);
-        HelpList.ItemsSource = BuildEntries(Localization.Current == TCTV.Core.Language.English);
+        TitleText.Text = Localization.T("help");
+        CloseButton.Content = Localization.T("back");
+        HelpList.ItemsSource = BuildEntries(Localization.IsEnglish);
     }
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();

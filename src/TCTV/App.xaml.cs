@@ -141,7 +141,7 @@ public partial class App : Application
         ReleaseAsset? asset = UpdateChecker.SelectAsset(update);
         if (asset is null)
         {
-            Show(owner, TCTV.Core.Localization.T(330), TCTV.Core.Localization.T(324), MessageBoxButton.OK, MessageBoxImage.Warning);
+            Show(owner, TCTV.Core.Localization.T("no_matching_variant"), TCTV.Core.Localization.T("update_available"), MessageBoxButton.OK, MessageBoxImage.Warning);
             OpenReleasePage(update.ReleaseUrl);
             return;
         }
@@ -154,7 +154,7 @@ public partial class App : Application
         catch (Exception)
         {
             TryDelete(tempFile);
-            Show(owner, TCTV.Core.Localization.T(234), TCTV.Core.Localization.T(233), MessageBoxButton.OK, MessageBoxImage.Warning);
+            Show(owner, TCTV.Core.Localization.T("update_failed"), TCTV.Core.Localization.T("update_error"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -178,7 +178,7 @@ public partial class App : Application
     private static bool AskToDownload(UpdateInfo update, Window? owner)
     {
         string message = string.Format(
-            TCTV.Core.Localization.T(325),
+            TCTV.Core.Localization.T("version_available"),
             UpdateChecker.Display(update.Version),
             UpdateChecker.Display(UpdateChecker.CurrentVersion));
 
@@ -193,12 +193,12 @@ public partial class App : Application
             message += Environment.NewLine + Environment.NewLine + changelog;
         }
 
-        message += Environment.NewLine + Environment.NewLine + TCTV.Core.Localization.T(232);
-        return Show(owner, message, TCTV.Core.Localization.T(324), MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes;
+        message += Environment.NewLine + Environment.NewLine + TCTV.Core.Localization.T("download_update_now");
+        return Show(owner, message, TCTV.Core.Localization.T("update_available"), MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes;
     }
 
     private static bool AskToInstall(Window? owner)
-        => Show(owner, TCTV.Core.Localization.T(331), TCTV.Core.Localization.T(324), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+        => Show(owner, TCTV.Core.Localization.T("update_downloaded"), TCTV.Core.Localization.T("update_available"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
     private static MessageBoxResult Show(Window? owner, string message, string title, MessageBoxButton buttons, MessageBoxImage icon)
         => owner is null
@@ -699,9 +699,9 @@ else {
         // --- EPG-Auto-Aktualisierung beim Einblenden (Optionen\fade-in-Auto-Aktualisierung) ---
         Expect("EPG-Auto-Aktualisierung: Standard ist aus", !App.Session.Settings.FadeInAutoRefresh);
         Expect("EPG-Auto-Aktualisierung: Sprachzeile 51 ist der Tooltip-Text",
-            TCTV.Core.Localization.T(51).Contains("EPG"), TCTV.Core.Localization.T(51));
+            TCTV.Core.Localization.T("epg_auto_update_tooltip").Contains("EPG"), TCTV.Core.Localization.T("epg_auto_update_tooltip"));
         Expect("EPG-Auto-Aktualisierung: Sprachzeile 51 ist nicht die Beschriftung",
-            TCTV.Core.Localization.T(51) != TCTV.Core.Localization.T(50));
+            TCTV.Core.Localization.T("epg_auto_update_tooltip") != TCTV.Core.Localization.T("epg_auto_update"));
 
         DateTimeOffset now = DateTimeOffset.UtcNow;
         TimeSpan interval = TCTV.Views.MainWindow.AutoRefreshInterval;
@@ -780,7 +780,7 @@ else {
             SettingsWindow settingsWindow = new();
             (string label, string tip, bool check) = settingsWindow.AutoRefreshInfoForSelfTest;
             Expect("SettingsWindow: Option ist beschriftet und hat einen Tooltip",
-                label == TCTV.Core.Localization.T(50) && tip == TCTV.Core.Localization.T(51), label + " / " + tip);
+                label == TCTV.Core.Localization.T("epg_auto_update") && tip == TCTV.Core.Localization.T("epg_auto_update_tooltip"), label + " / " + tip);
             Expect("SettingsWindow: Option uebernimmt den Ini-Wert", check == App.Session.Settings.FadeInAutoRefresh);
         }
         catch (Exception ex)
@@ -796,8 +796,8 @@ else {
             TCTV.Views.MainWindow.StatusLine("Verbunden!", string.Empty) == "Verbunden!"
             && TCTV.Views.MainWindow.StatusLine("Verbunden!", null) == "Verbunden!");
         Expect("Kopfzeile: auch \"Nicht verbunden\" nennt das Profil",
-            TCTV.Views.MainWindow.StatusLine(TCTV.Core.Localization.T(99), "Box100")
-                == TCTV.Core.Localization.T(99) + " · Box100");
+            TCTV.Views.MainWindow.StatusLine(TCTV.Core.Localization.T("not_connected"), "Box100")
+                == TCTV.Core.Localization.T("not_connected") + " · Box100");
 
         try
         {
@@ -807,8 +807,8 @@ else {
 
             string profileName = App.Session.Profile.Name;
             string expectedHeader = profileName.Length > 0
-                ? TCTV.Core.Localization.T(100) + " · " + profileName
-                : TCTV.Core.Localization.T(100);
+                ? TCTV.Core.Localization.T("connected") + " · " + profileName
+                : TCTV.Core.Localization.T("connected");
             Expect("Kopfzeile: Fenster zeigt die Meldung mit Profilnamen",
                 headerText == expectedHeader, headerText);
             Expect("Kopfzeile: Kurzinfo nennt Box-Adresse und Schnittstelle",
@@ -1035,6 +1035,13 @@ else {
             && recordingInfo.Info1 == "Nachrichten"
             && recordingInfo.Description == "Die Themen des Tages",
             recordingInfo.Title);
+
+        Expect("Sprache: deutsch ist geladen",
+            TCTV.Core.Localization.T("settings") == "Einstellungen" && TCTV.Core.Localization.T("radio") == "Radio",
+            TCTV.Core.Localization.T("settings"));
+        Expect("Sprache: english ist verfügbar",
+            TCTV.Core.Localization.AvailableLanguages.Contains("english"),
+            string.Join(", ", TCTV.Core.Localization.AvailableLanguages));
     }
 
     /// <summary>Prüft Versionsvergleich und Release-Auswertung der Updateprüfung.</summary>

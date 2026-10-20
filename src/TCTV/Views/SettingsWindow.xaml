@@ -57,10 +57,7 @@
                             </Grid.RowDefinitions>
 
                             <TextBlock x:Name="LabelLanguage" TextWrapping="Wrap" Grid.Row="0" Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center" />
-                            <ComboBox x:Name="LanguageCombo" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource ModernCombo}">
-                                <ComboBoxItem Content="Deutsch" />
-                                <ComboBoxItem Content="English" />
-                            </ComboBox>
+                            <ComboBox x:Name="LanguageCombo" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource ModernCombo}" />
 
                             <TextBlock x:Name="LabelTheme" TextWrapping="Wrap" Grid.Row="1" Grid.Column="0" Text="Theme" Margin="0,0,10,0" VerticalAlignment="Center" />
                             <ComboBox x:Name="ThemeCombo" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8" Style="{StaticResource ModernCombo}">

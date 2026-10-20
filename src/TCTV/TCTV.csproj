@@ -33,6 +33,11 @@
     <Using Include="System.IO" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Sprachdateien: eine Zeile je Eintrag, als eingebettete Ressource. -->
+    <EmbeddedResource Include="Languages\*.lang" />
+  </ItemGroup>
+
   <!--
     Eine Einzeldatei-EXE genügt: die runtimeconfig.json wird mit eingebettet und der
     Host wertet das darin stehende "rollForward" aus dem Bundle aus. Nachgemessen mit

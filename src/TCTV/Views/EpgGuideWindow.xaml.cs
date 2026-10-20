@@ -25,7 +25,7 @@ public sealed class EpgGuideEntry
 
     public string Start => FormatStart(Event);
 
-    public string Duration => Event.TotalMinutes > 0 ? Event.TotalMinutes + " " + Localization.T(29) : string.Empty;
+    public string Duration => Event.TotalMinutes > 0 ? Event.TotalMinutes + " " + Localization.T("minutes") : string.Empty;
 
     public string Title => string.IsNullOrEmpty(Event.Info1) ? Event.Description : Event.Info1;
 
@@ -70,13 +70,13 @@ public partial class EpgGuideWindow : Window
 
     private void ApplyLocalization()
     {
-        TitleText.Text = Localization.T(335);
-        SearchLabel.Text = Localization.T(339);
-        CloseButton.Content = Localization.T(240);
-        EmptyHintText.Text = Localization.T(2);
-        RecordMenuItem.Header = Localization.T(340);
-        ImdbMenuItem.Header = Localization.T(10);
-        TheTvdbMenuItem.Header = Localization.T(11);
+        TitleText.Text = Localization.T("programme");
+        SearchLabel.Text = Localization.T("search");
+        CloseButton.Content = Localization.T("back");
+        EmptyHintText.Text = Localization.T("no_epg");
+        RecordMenuItem.Header = Localization.T("record");
+        ImdbMenuItem.Header = Localization.T("imdb");
+        TheTvdbMenuItem.Header = Localization.T("thetvdb");
     }
 
     private async Task ReloadAsync()
@@ -153,7 +153,7 @@ public partial class EpgGuideWindow : Window
             MessageBox.Show(
                 this,
                 entry.ChannelName + Environment.NewLine + start.Value.ToString("dd.MM.yyyy HH:mm") + " – " + stop.Value.ToString("HH:mm"),
-                Localization.T(9),
+                Localization.T("set_timer"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }

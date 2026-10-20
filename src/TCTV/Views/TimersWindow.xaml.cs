@@ -17,7 +17,7 @@ public sealed class TimerEntry
 
     public TimerItem Timer => _timer;
 
-    public string Title => string.IsNullOrEmpty(_timer.Title) ? Localization.T(219) : _timer.Title;
+    public string Title => string.IsNullOrEmpty(_timer.Title) ? Localization.T("recording") : _timer.Title;
 
     public string Channel => string.IsNullOrEmpty(_timer.ChannelName) ? _timer.ChannelId : _timer.ChannelName;
 
@@ -49,13 +49,13 @@ public partial class TimersWindow : Window
 
     private void ApplyLocalization()
     {
-        TitleText.Text = Localization.T(337);
-        RunningHeader.Text = Localization.T(338);
-        TimerHeader.Text = Localization.T(337);
-        RefreshButton.Content = Localization.T(304);
-        DeleteButton.Content = Localization.T(23);
-        CloseButton.Content = Localization.T(240);
-        EmptyHintText.Text = Localization.T(2);
+        TitleText.Text = Localization.T("timers");
+        RunningHeader.Text = Localization.T("running_recordings");
+        TimerHeader.Text = Localization.T("timers");
+        RefreshButton.Content = Localization.T("refresh_epg");
+        DeleteButton.Content = Localization.T("delete");
+        CloseButton.Content = Localization.T("back");
+        EmptyHintText.Text = Localization.T("no_epg");
     }
 
     private async Task ReloadAsync()

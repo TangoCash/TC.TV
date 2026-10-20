@@ -56,18 +56,18 @@ public sealed class ChannelItem
         {
             if (Channel.IsRadio)
             {
-                return Localization.T(343);
+                return Localization.T("radio");
             }
 
             string description = Channel.FirstEpg.Description;
             if (string.IsNullOrEmpty(description))
             {
-                return Localization.T(2);
+                return Localization.T("no_epg");
             }
 
             int minutes = Channel.FirstEpg.TotalMinutes;
             return minutes > 0
-                ? description + "   (" + minutes + " " + Localization.T(29) + ")"
+                ? description + "   (" + minutes + " " + Localization.T("minutes") + ")"
                 : description;
         }
     }
@@ -248,7 +248,7 @@ public partial class MainWindow : Window
         ChannelList.ItemsSource = items;
         ChannelList.SelectedIndex = 0;
         SetEmptyHint(null);
-        SetStatus(Localization.T(100), true);
+        SetStatus(Localization.T("connected"), true);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -280,7 +280,7 @@ public partial class MainWindow : Window
 
         CreateTray();
 
-        SetEmptyHint(Localization.T(15));
+        SetEmptyHint(Localization.T("loading"));
 
         Loaded += async (_, _) => await InitializeAsync();
         Closing += OnClosing;
@@ -289,21 +289,21 @@ public partial class MainWindow : Window
 
     private void ApplyLocalization()
     {
-        SetButton(StreamButton, "\uE768", Localization.T(207));
-        SetButton(StopButton, "\uE71A", Localization.T(4));
-        SetButton(VideoButton, "\uE714", Localization.T(336));
-        SetButton(GuideButton, "\uE7F4", Localization.T(335));
-        SetButton(RefreshButton, "\uE72C", Localization.T(304));
-        SetButton(TimersButton, "\uE823", Localization.T(337));
-        SetButton(SettingsButton, "\uE713", Localization.T(0));
-        SetButton(ProfilesButton, "\uE716", Localization.T(93));
+        SetButton(StreamButton, "\uE768", Localization.T("start_stream"));
+        SetButton(StopButton, "\uE71A", Localization.T("stop"));
+        SetButton(VideoButton, "\uE714", Localization.T("recordings"));
+        SetButton(GuideButton, "\uE7F4", Localization.T("programme"));
+        SetButton(RefreshButton, "\uE72C", Localization.T("refresh_epg"));
+        SetButton(TimersButton, "\uE823", Localization.T("timers"));
+        SetButton(SettingsButton, "\uE713", Localization.T("settings"));
+        SetButton(ProfilesButton, "\uE716", Localization.T("profiles"));
 
         FullScreenButton.Content = "\uE740";
-        FullScreenButton.ToolTip = Localization.T(6);
+        FullScreenButton.ToolTip = Localization.T("fullscreen");
         ExitButton.Content = "\uE8BB";
-        ExitButton.ToolTip = Localization.T(305);
-        StreamMenuItem.Header = Localization.T(334);
-        MoreEpgMenuItem.Header = Localization.T(333);
+        ExitButton.ToolTip = Localization.T("exit");
+        StreamMenuItem.Header = Localization.T("stream_current_channel");
+        MoreEpgMenuItem.Header = Localization.T("more_epg");
 
         if (ChannelList.ItemsSource is IEnumerable<ChannelItem> items)
         {
@@ -376,13 +376,13 @@ public partial class MainWindow : Window
         }
 
         Forms.ContextMenuStrip menu = new();
-        menu.Items.Add(Localization.T(8), null, (_, _) => TogglePin());
-        menu.Items.Add(Localization.T(30), null, (_, _) => OpenVideoWindow());
-        menu.Items.Add(Localization.T(0), null, (_, _) => OpenSettings());
-        menu.Items.Add(Localization.T(93), null, (_, _) => OpenProfiles());
-        menu.Items.Add(Localization.T(1), null, (_, _) => OpenHelp());
+        menu.Items.Add(Localization.T("fade_in_out"), null, (_, _) => TogglePin());
+        menu.Items.Add(Localization.T("video"), null, (_, _) => OpenVideoWindow());
+        menu.Items.Add(Localization.T("settings"), null, (_, _) => OpenSettings());
+        menu.Items.Add(Localization.T("profiles"), null, (_, _) => OpenProfiles());
+        menu.Items.Add(Localization.T("help"), null, (_, _) => OpenHelp());
         menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add(Localization.T(305), null, (_, _) => ExitApp());
+        menu.Items.Add(Localization.T("exit"), null, (_, _) => ExitApp());
 
         _tray.ContextMenuStrip = menu;
         _tray.MouseClick += (_, e) =>
@@ -522,7 +522,7 @@ public partial class MainWindow : Window
     /// <summary>Bouquets und Sender neu laden (entspricht _1ag/_1af des Originals).</summary>
     private async Task ReloadAsync()
     {
-        SetStatus(Localization.T(15));
+        SetStatus(Localization.T("loading"));
         try
         {
             List<Bouquet> bouquets = await _session.Client.GetBouquetsAsync(_cts.Token);
@@ -544,8 +544,8 @@ public partial class MainWindow : Window
                 _channels.Clear();
                 _selected = null;
                 UpdateDetails();
-                SetEmptyHint(Localization.T(17));
-                SetStatus(Localization.T(17), false);
+                SetEmptyHint(Localization.T("no_connection"));
+                SetStatus(Localization.T("no_connection"), false);
                 return;
             }
 
@@ -567,7 +567,7 @@ public partial class MainWindow : Window
     {
         string? previousId = preserveSelection ? _selected?.Id : null;
 
-        SetStatus(Localization.T(15));
+        SetStatus(Localization.T("loading"));
         List<Channel> channels = await _session.Client.GetBouquetAsync(bouquetNumber, _cts.Token);
         _channels = channels;
 
@@ -589,8 +589,8 @@ public partial class MainWindow : Window
             ChannelList.SelectedIndex = index >= 0 ? index : 0;
         }
 
-        SetStatus(channels.Count > 0 ? Localization.T(100) : Localization.T(99), channels.Count > 0);
-        SetEmptyHint(channels.Count == 0 ? Localization.T(17) : null);
+        SetStatus(channels.Count > 0 ? Localization.T("connected") : Localization.T("not_connected"), channels.Count > 0);
+        SetEmptyHint(channels.Count == 0 ? Localization.T("no_connection") : null);
 
         // Frische Daten holen heißt: die Auto-Aktualisierung wartet wieder 60 s.
         _lastLoadUtc = DateTimeOffset.UtcNow;
@@ -749,8 +749,8 @@ public partial class MainWindow : Window
 
         // Kopfzeile: Startzeit, Dauer, Titel (Info1) und Kurztext (Info2).
         DetailInfo.Text = first.IsEmpty
-            ? Localization.T(2)
-            : (first.StartTime + "   " + first.TimeTotal + " " + Localization.T(29) + Environment.NewLine +
+            ? Localization.T("no_epg")
+            : (first.StartTime + "   " + first.TimeTotal + " " + Localization.T("minutes") + Environment.NewLine +
                first.Header).Trim();
 
         // Ausführliche Beschreibung der Sendung. Die alte API liefert sie bereits im
@@ -894,7 +894,7 @@ public partial class MainWindow : Window
 
         if (!_session.IsVlcAvailable)
         {
-            MessageBox.Show(Localization.T(102), "TC.TV", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Localization.T("set_vlc_manually"), "TC.TV", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -902,7 +902,7 @@ public partial class MainWindow : Window
         // verhindert das Streaming (Original: Abbruch mit "Aufnahme läuft!").
         if (await IsBlockedByRunningRecordingAsync(channel))
         {
-            MessageBox.Show(Localization.T(54), Localization.T(75), MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Localization.T("stream_same_transponder_only"), Localization.T("recording_running"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -942,7 +942,7 @@ public partial class MainWindow : Window
 
             if (VlcLauncher.Play(_session.VlcPath, arguments))
             {
-                SetStatus(Localization.T(299));
+                SetStatus(Localization.T("vlc_started"));
             }
         }
         catch (OperationCanceledException)
@@ -989,7 +989,7 @@ public partial class MainWindow : Window
     private void OnStop(object sender, RoutedEventArgs e)
     {
         VlcLauncher.StopPlayback(_session.VlcOptions);
-        SetStatus(Localization.T(4));
+        SetStatus(Localization.T("stop"));
     }
 
     private void OnRefreshEpg(object sender, RoutedEventArgs e) => _ = RefreshCurrentBouquetAsync();

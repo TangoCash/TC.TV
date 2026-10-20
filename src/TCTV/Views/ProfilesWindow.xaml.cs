@@ -22,22 +22,22 @@ public partial class ProfilesWindow : Window
 
     private void ApplyLocalization()
     {
-        Title = Localization.T(93);
-        HeaderProfile.Text = Localization.T(94);
-        LabelWebUser.Text = Localization.T(117);
-        LabelWebPassword.Text = Localization.T(134);
-        ExternalBox.Content = Localization.T(131);
+        Title = Localization.T("profiles");
+        HeaderProfile.Text = Localization.T("profile_settings");
+        LabelWebUser.Text = Localization.T("web_user");
+        LabelWebPassword.Text = Localization.T("web_password");
+        ExternalBox.Content = Localization.T("external");
         WebAuthBox.Content = "Web-Authentifikation";
-        ForceSwitchBox.Content = Localization.T(108);
-        FavoritesBox.Content = Localization.T(159);
-        MultiTunerBox.Content = Localization.T(91);
-        NewButton.Content = Localization.T(21);
-        DeleteButton.Content = Localization.T(23);
-        ApplyButton.Content = Localization.T(302);
-        ActivateButton.Content = Localization.T(24);
-        ExportButton.Content = Localization.T(341);
-        ImportButton.Content = Localization.T(342);
-        CloseButton.Content = Localization.T(20);
+        ForceSwitchBox.Content = Localization.T("force_switch");
+        FavoritesBox.Content = Localization.T("show_only_favorites");
+        MultiTunerBox.Content = Localization.T("multituner");
+        NewButton.Content = Localization.T("new");
+        DeleteButton.Content = Localization.T("delete");
+        ApplyButton.Content = Localization.T("save");
+        ActivateButton.Content = Localization.T("switch_profile");
+        ExportButton.Content = Localization.T("export");
+        ImportButton.Content = Localization.T("import");
+        CloseButton.Content = Localization.T("back");
 
         LabelApi.Text = "API";
         ApiBox.ToolTip = "Alte API (/control/) = Originalprogramm; "
@@ -83,7 +83,7 @@ public partial class ProfilesWindow : Window
 
     private void OnNew(object sender, RoutedEventArgs e)
     {
-        string? name = PromptWindow.Ask(this, Localization.T(21), Localization.T(122), _session.Profiles.SuggestName());
+        string? name = PromptWindow.Ask(this, Localization.T("new"), Localization.T("profile_name"), _session.Profiles.SuggestName());
         if (string.IsNullOrWhiteSpace(name))
         {
             return;
@@ -92,7 +92,7 @@ public partial class ProfilesWindow : Window
         name = name.Trim();
         if (File.Exists(_session.Profiles.GetPath(name)))
         {
-            MessageBox.Show(Localization.T(58), Localization.T(58), MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Localization.T("error"), Localization.T("error"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -110,7 +110,7 @@ public partial class ProfilesWindow : Window
 
         if (string.Equals(name, _session.Profile.Name, StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show(Localization.T(66), Localization.T(58), MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Localization.T("profile_in_use"), Localization.T("error"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -210,7 +210,7 @@ public partial class ProfilesWindow : Window
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                MessageBox.Show(ex.Message, Localization.T(58), MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(ex.Message, Localization.T("error"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
@@ -240,7 +240,7 @@ public partial class ProfilesWindow : Window
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            MessageBox.Show(ex.Message, Localization.T(58), MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, Localization.T("error"), MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 

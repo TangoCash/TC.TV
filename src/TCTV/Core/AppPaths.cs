@@ -25,6 +25,7 @@ public static class AppPaths
     private const string WorkDirName = "TC.TV_Workdir";
     private const string TempDirName = "Temp";
     private const string LogosDirName = "Logos";
+    private const string LangDirName = "Lang";
     private const string IniFileName = "TC.TV.ini";
     private const string VlcPortableDirName = "VLCPortable";
 
@@ -62,6 +63,8 @@ public static class AppPaths
 
     public static string LogosDir { get; private set; } = string.Empty;
 
+    public static string LangDir { get; private set; } = string.Empty;
+
     public static string IniPath { get; private set; } = string.Empty;
 
     public static string VlcPortableDir { get; private set; } = string.Empty;
@@ -95,6 +98,7 @@ public static class AppPaths
         WorkDir = Path.Combine(DataRoot, WorkDirName);
         TempDir = Path.Combine(WorkDir, TempDirName);
         LogosDir = Path.Combine(WorkDir, LogosDirName);
+        LangDir = Path.Combine(WorkDir, LangDirName);
         IniPath = Path.Combine(WorkDir, IniFileName);
         VlcPortableDir = Path.Combine(WorkDir, VlcPortableDirName);
 
@@ -106,6 +110,7 @@ public static class AppPaths
             }
 
             Directory.CreateDirectory(LogosDir);
+            Directory.CreateDirectory(LangDir);
             Directory.CreateDirectory(TempDir);
         }
         catch (IOException)

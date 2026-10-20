@@ -6,7 +6,7 @@ namespace TCTV.Core;
 /// </summary>
 public sealed class AppSettings
 {
-    public Language Language { get; set; } = Language.Deutsch;
+    public string Language { get; set; } = "deutsch";
 
     /// <summary>
     /// Ini-Wert aus Benutzerdaten\Theme. "3" = Dark orange (Standarddesign),
@@ -56,7 +56,7 @@ public sealed class AppSettings
 
     public static AppSettings Load(IniFile ini) => new()
     {
-        Language = Localization.Parse(ini.Read("Benutzerdaten", "Sprache", "deutsch")),
+        Language = ini.Read("Benutzerdaten", "Sprache", "deutsch"),
         ThemeValue = Default(ini.Read("Benutzerdaten", "Theme", string.Empty), "3"),
         ProfileFileName = ini.Read("Benutzerdaten", "Profil", string.Empty),
         LastBouquetNumber = ini.Read("Benutzerdaten", "Bouquet", string.Empty),
@@ -75,7 +75,7 @@ public sealed class AppSettings
 
     public void Save(IniFile ini)
     {
-        ini.Write("Benutzerdaten", "Sprache", Language == Language.English ? "english" : "deutsch");
+        ini.Write("Benutzerdaten", "Sprache", Language);
         if (string.IsNullOrEmpty(ThemeValue))
         {
             ini.DeleteKey("Benutzerdaten", "Theme");

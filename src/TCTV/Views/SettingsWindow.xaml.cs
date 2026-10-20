@@ -9,6 +9,7 @@ namespace TCTV.Views;
 public partial class SettingsWindow : Window
 {
     private readonly AppSession _session = App.Session;
+    private List<string> _languages = new();
 
     public SettingsWindow()
     {
@@ -19,26 +20,26 @@ public partial class SettingsWindow : Window
 
     private void ApplyLocalization()
     {
-        Title = Localization.T(0);
-        HeaderGeneral.Text = Localization.T(113);
-        HeaderVlc.Text = Localization.T(127);
-        LabelLanguage.Text = Localization.T(120);
-        LabelFadeDelay.Text = Localization.T(301);
-        FadeAutoRefreshBox.Content = Localization.T(50);
-        FadeAutoRefreshBox.ToolTip = Localization.T(51);
-        FirstScreenBox.Content = Localization.T(308);
-        LeftEdgeBox.Content = Localization.T(316);
-        RecursiveBox.Content = Localization.T(320);
-        TransponderBox.Content = Localization.T(33);
-        FullscreenStreamsBox.Content = Localization.T(168);
-        CloseVlcBox.Content = Localization.T(154);
-        SaveButton.Content = Localization.T(302);
-        CancelButton.Content = Localization.T(272);
+        Title = Localization.T("settings");
+        HeaderGeneral.Text = Localization.T("general_settings");
+        HeaderVlc.Text = Localization.T("vlc_settings");
+        LabelLanguage.Text = Localization.T("language");
+        LabelFadeDelay.Text = Localization.T("fade_delay");
+        FadeAutoRefreshBox.Content = Localization.T("epg_auto_update");
+        FadeAutoRefreshBox.ToolTip = Localization.T("epg_auto_update_tooltip");
+        FirstScreenBox.Content = Localization.T("first_screen");
+        LeftEdgeBox.Content = Localization.T("left_edge");
+        RecursiveBox.Content = Localization.T("incl_subfolders");
+        TransponderBox.Content = Localization.T("mark_transponder_channels");
+        FullscreenStreamsBox.Content = Localization.T("streams_fullscreen");
+        CloseVlcBox.Content = Localization.T("close_vlc_with_app");
+        SaveButton.Content = Localization.T("save");
+        CancelButton.Content = Localization.T("cancel");
         LabelVlcPath.Text = "VLC Player";
-        UpdateCheckBox.Content = Localization.T(326);
-        UpdateCheckBox.ToolTip = Localization.T(327);
-        CheckUpdatesButton.Content = Localization.T(328);
-        VersionText.Text = string.Format(Localization.T(332), UpdateChecker.Display(UpdateChecker.CurrentVersion));
+        UpdateCheckBox.Content = Localization.T("update_check");
+        UpdateCheckBox.ToolTip = Localization.T("update_check_tooltip");
+        CheckUpdatesButton.Content = Localization.T("check_now");
+        VersionText.Text = string.Format(Localization.T("version"), UpdateChecker.Display(UpdateChecker.CurrentVersion));
     }
 
     /// <summary>Reihenfolge der Themen im Auswahlfeld (Dark orange ist Standard).</summary>
@@ -49,7 +50,10 @@ public partial class SettingsWindow : Window
         AppSettings settings = _session.Settings;
         VlcOptions vlc = _session.VlcOptions;
 
-        LanguageCombo.SelectedIndex = settings.Language == Core.Language.English ? 1 : 0;
+        _languages = Localization.AvailableLanguages.ToList();
+        LanguageCombo.ItemsSource = _languages.Select(DisplayLanguage).ToList();
+        int languageIndex = _languages.FindIndex(name => string.Equals(name, settings.Language, StringComparison.OrdinalIgnoreCase));
+        LanguageCombo.SelectedIndex = languageIndex >= 0 ? languageIndex : 0;
         int themeIndex = Array.IndexOf(ThemeValues, (settings.ThemeValue ?? string.Empty).Trim());
         ThemeCombo.SelectedIndex = themeIndex < 0 ? 0 : themeIndex;
         VlcPathBox.Text = _session.VlcPath;
@@ -80,7 +84,7 @@ public partial class SettingsWindow : Window
         OpenFileDialog dialog = new()
         {
             Filter = "VLC Player (vlc.exe)|vlc.exe|Programme (*.exe)|*.exe",
-            Title = Localization.T(102),
+            Title = Localization.T("set_vlc_manually"),
         };
 
         if (dialog.ShowDialog(this) == true)
@@ -94,7 +98,8 @@ public partial class SettingsWindow : Window
         AppSettings settings = _session.Settings;
         VlcOptions vlc = _session.VlcOptions;
 
-        settings.Language = LanguageCombo.SelectedIndex == 1 ? Core.Language.English : Core.Language.Deutsch;
+        int languageIndex = Math.Clamp(LanguageCombo.SelectedIndex, 0, _languages.Count - 1);
+        settings.Language = _languages.Count == 0 ? "deutsch" : _languages[languageIndex];
         settings.ThemeValue = ThemeValues[Math.Clamp(ThemeCombo.SelectedIndex, 0, ThemeValues.Length - 1)];
         settings.FadeInDelayMs = int.TryParse(FadeDelayBox.Text, out int delay) ? delay : 0;
 
@@ -128,6 +133,10 @@ public partial class SettingsWindow : Window
 
     private void OnCancel(object sender, RoutedEventArgs e) => DialogResult = false;
 
+    /// <summary>Anzeigename einer Sprache.</summary>
+    private static string DisplayLanguage(string name)
+        => Localization.DisplayName(name);
+
     /// <summary>Prüft manuell auf Updates und zeigt das Ergebnis.</summary>
     private async void OnCheckUpdates(object sender, RoutedEventArgs e)
     {
@@ -148,7 +157,7 @@ public partial class SettingsWindow : Window
 
         if (update is null)
         {
-            MessageBox.Show(this, Localization.T(234), Localization.T(233), MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Localization.T("update_failed"), Localization.T("update_error"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -158,7 +167,7 @@ public partial class SettingsWindow : Window
         }
         else
         {
-            MessageBox.Show(this, Localization.T(329), Localization.T(324), MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Localization.T("no_newer_version"), Localization.T("update_available"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 

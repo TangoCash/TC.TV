@@ -19,7 +19,7 @@ public sealed class EpgEntry
     public string Start => FormatStart(_event);
 
     public string Duration => _event.TotalMinutes > 0
-        ? _event.TotalMinutes + " " + Localization.T(29)
+        ? _event.TotalMinutes + " " + Localization.T("minutes")
         : string.Empty;
 
     public string Title => string.IsNullOrEmpty(_event.Info1) ? _event.Description : _event.Info1;
@@ -55,16 +55,16 @@ public partial class EpgWindow : Window
         InitializeComponent();
         _channelId = channelId;
         HeaderText.Text = channelName;
-        CloseButton.Content = Localization.T(240);
-        RecordMenuItem.Header = Localization.T(340);
-        ImdbMenuItem.Header = Localization.T(10);
-        TheTvdbMenuItem.Header = Localization.T(11);
+        CloseButton.Content = Localization.T("back");
+        RecordMenuItem.Header = Localization.T("record");
+        ImdbMenuItem.Header = Localization.T("imdb");
+        TheTvdbMenuItem.Header = Localization.T("thetvdb");
 
         if (events.Count == 0)
         {
             EventList.ItemsSource = new[]
             {
-                new EpgEntry(new EpgEvent { Info1 = Localization.T(2) }),
+                new EpgEntry(new EpgEvent { Info1 = Localization.T("no_epg") }),
             };
         }
         else
@@ -215,7 +215,7 @@ public partial class EpgWindow : Window
             MessageBox.Show(
                 this,
                 (HeaderText.Text ?? string.Empty) + Environment.NewLine + start.Value.ToString("dd.MM.yyyy HH:mm") + " – " + stop.Value.ToString("HH:mm"),
-                Localization.T(9),
+                Localization.T("set_timer"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }

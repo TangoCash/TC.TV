@@ -97,15 +97,15 @@ public partial class VideoWindow : Window
 
     private void ApplyLocalization()
     {
-        Title = Localization.T(30);
+        Title = Localization.T("video");
         RecordingsButton.Content = "Aufnahmen";
         MoviesButton.Content = "Videos";
-        UpButton.Content = Localization.T(240);
-        RefreshButton.Content = Localization.T(304);
-        PlayButton.Content = Localization.T(242);
-        CloseButton.Content = Localization.T(240);
-        RecursiveBox.Content = Localization.T(320);
-        RecursiveBox.ToolTip = Localization.T(36);
+        UpButton.Content = Localization.T("back");
+        RefreshButton.Content = Localization.T("refresh_epg");
+        PlayButton.Content = Localization.T("play");
+        CloseButton.Content = Localization.T("back");
+        RecursiveBox.Content = Localization.T("incl_subfolders");
+        RecursiveBox.ToolTip = Localization.T("recursive_video_tooltip");
     }
 
     /// <summary>Lädt die Wurzelverzeichnisse (/control/getdir).</summary>
@@ -256,7 +256,7 @@ public partial class VideoWindow : Window
     {
         if (!_session.IsVlcAvailable)
         {
-            MessageBox.Show(Localization.T(102), "TC.TV", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Localization.T("set_vlc_manually"), "TC.TV", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 

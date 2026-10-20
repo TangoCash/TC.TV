@@ -93,7 +93,7 @@ public sealed class PromptWindow : Window
 
         ok.Click += (_, _) => DialogResult = true;
 
-        Button cancel = new() { Content = Localization.T(272), Width = 90, IsCancel = true };
+        Button cancel = new() { Content = Localization.T("cancel"), Width = 90, IsCancel = true };
         cancel.Click += (_, _) => DialogResult = false;
 
         buttons.Children.Add(ok);
